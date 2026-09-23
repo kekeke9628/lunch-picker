@@ -1,0 +1,944 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>오늘 점심 뭐 먹지</title>
+<style>
+:root{
+  --bg:#f6f5f2; --surface:#fff; --surface-2:#f0efec; --line:#e2e0da;
+  --text:#22201c; --muted:#6f6a61; --accent:#d8542f; --accent-soft:#fdeee8;
+  --good:#2f7d5a; --shadow:0 1px 2px rgba(0,0,0,.05),0 8px 24px -12px rgba(0,0,0,.18);
+  --r:14px; color-scheme:light dark;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#16151a; --surface:#1f1e24; --surface-2:#282730; --line:#35333d;
+    --text:#eceaf0; --muted:#9d99a6; --accent:#ff7d54; --accent-soft:#2f2019;
+    --good:#5fc396; --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px -12px rgba(0,0,0,.6);
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#16151a; --surface:#1f1e24; --surface-2:#282730; --line:#35333d;
+  --text:#eceaf0; --muted:#9d99a6; --accent:#ff7d54; --accent-soft:#2f2019;
+  --good:#5fc396; --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px -12px rgba(0,0,0,.6);
+}
+*{box-sizing:border-box}
+body{
+  margin:0; background:var(--bg); color:var(--text);
+  font:15px/1.55 -apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Pretendard",
+       "Malgun Gothic",system-ui,sans-serif;
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+img{max-width:100%} [hidden]{display:none!important}
+button,select,input,textarea{font:inherit;color:inherit}
+button{cursor:pointer;border:none;background:none}
+
+.wrap{max-width:720px;margin:0 auto;padding:0 16px}
+
+/* ---------- header ---------- */
+header{
+  position:sticky; top:0; z-index:20; background:var(--bg);
+  border-bottom:1px solid var(--line);
+  padding-top:env(safe-area-inset-top,0px);
+}
+.brand{display:flex;align-items:center;gap:10px;padding:14px 0 10px}
+.brand h1{font-size:18px;margin:0;letter-spacing:-.02em}
+.brand .sub{color:var(--muted);font-size:12.5px;margin-left:auto}
+.tabs{display:flex;gap:4px;padding-bottom:10px}
+.tabs button{
+  padding:7px 14px;border-radius:999px;font-size:13.5px;font-weight:600;
+  color:var(--muted);
+}
+.tabs button[aria-selected="true"]{background:var(--accent);color:#fff}
+
+/* ---------- cards / controls ---------- */
+.card{
+  background:var(--surface);border:1px solid var(--line);border-radius:var(--r);
+  padding:16px;margin:14px 0;box-shadow:var(--shadow);
+}
+.card h2{font-size:13px;letter-spacing:.04em;color:var(--muted);
+  text-transform:uppercase;margin:0 0 12px}
+.row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.row+.row{margin-top:14px}
+label.f{display:block;font-size:13px;color:var(--muted);margin-bottom:6px}
+select,input[type=text],input[type=number],textarea{
+  width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:10px;
+  background:var(--surface-2);
+}
+input[type=range]{width:100%;accent-color:var(--accent)}
+.val{font-variant-numeric:tabular-nums;font-weight:700;color:var(--accent)}
+
+.chips{display:flex;gap:7px;flex-wrap:wrap}
+.chip{
+  padding:7px 13px;border-radius:999px;border:1px solid var(--line);
+  background:var(--surface-2);font-size:13.5px;font-weight:500;
+}
+.chip[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:#fff}
+
+.btn{
+  padding:13px 18px;border-radius:12px;background:var(--accent);color:#fff;
+  font-weight:700;font-size:15px;width:100%;
+}
+.btn:active{transform:translateY(1px)}
+.btn.ghost{background:var(--surface-2);color:var(--text);border:1px solid var(--line)}
+.btn.sm{padding:9px 14px;font-size:13.5px;width:auto}
+
+/* ---------- results ---------- */
+.pick{
+  display:flex;gap:12px;align-items:flex-start;background:var(--surface);
+  border:1px solid var(--line);border-radius:var(--r);padding:14px;margin-bottom:10px;
+  transition:transform .12s,border-color .12s,box-shadow .12s;
+}
+.pick.lit{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft);transform:scale(1.015)}
+.pick.won{border-color:var(--good);box-shadow:0 0 0 3px rgba(47,125,90,.16)}
+.pick .em{font-size:26px;line-height:1.2;flex:none}
+.pick .body{min-width:0;flex:1}
+.pick .nm{font-weight:700;font-size:15.5px;letter-spacing:-.01em;
+  overflow-wrap:anywhere}
+.pick .meta{color:var(--muted);font-size:12.5px;margin-top:3px}
+.pick .tg{display:flex;gap:5px;flex-wrap:wrap;margin-top:7px}
+.pick .tg span{font-size:11px;padding:2px 7px;border-radius:999px;
+  background:var(--surface-2);color:var(--muted)}
+.pick a.map{font-size:12.5px;color:var(--accent);font-weight:600;text-decoration:none;
+  flex:none;align-self:center}
+
+.empty{text-align:center;color:var(--muted);padding:34px 16px;font-size:14px}
+.note{font-size:12px;color:var(--muted);margin-top:10px;line-height:1.5}
+
+/* ---------- modal ---------- */
+.mask{
+  position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:50;
+  display:flex;align-items:center;justify-content:center;padding:16px;
+}
+.modal{
+  background:var(--surface);border-radius:18px;padding:22px;width:100%;
+  max-width:420px;box-shadow:var(--shadow);max-height:88vh;overflow:auto;
+}
+.modal h3{margin:0 0 4px;font-size:17px}
+.modal .lead{color:var(--muted);font-size:13px;margin:0 0 16px}
+.vs{text-align:center;color:var(--muted);font-size:12px;font-weight:700;margin:8px 0}
+.duel{
+  width:100%;padding:18px;border-radius:14px;border:1px solid var(--line);
+  background:var(--surface-2);text-align:left;
+}
+.duel:hover{border-color:var(--accent)}
+.duel .nm{font-weight:700;font-size:16px}
+.duel .meta{color:var(--muted);font-size:12.5px;margin-top:3px}
+.winner{text-align:center;padding:14px 0 6px}
+.winner .em{font-size:46px}
+.winner .nm{font-size:22px;font-weight:800;margin-top:6px;letter-spacing:-.02em}
+.winner .meta{color:var(--muted);font-size:13.5px;margin-top:5px}
+
+/* ---------- lists ---------- */
+.item{
+  display:flex;gap:10px;align-items:center;padding:11px 0;
+  border-bottom:1px solid var(--line);
+}
+.item:last-child{border-bottom:none}
+.item .body{flex:1;min-width:0}
+.item .nm{font-weight:600;font-size:14.5px;overflow-wrap:anywhere}
+.item .meta{color:var(--muted);font-size:12px;margin-top:2px}
+.item.off .nm,.item.off .meta{opacity:.4;text-decoration:line-through}
+.mini{padding:6px 10px;border-radius:8px;background:var(--surface-2);
+  border:1px solid var(--line);font-size:12px;font-weight:600;flex:none}
+
+.bar{display:flex;align-items:center;gap:8px;margin:7px 0;font-size:13px}
+.bar .lb{width:66px;flex:none;color:var(--muted)}
+.bar .tr{flex:1;height:8px;background:var(--surface-2);border-radius:999px;overflow:hidden}
+.bar .fl{height:100%;background:var(--accent);border-radius:999px}
+.bar .ct{width:34px;text-align:right;font-variant-numeric:tabular-nums;color:var(--muted)}
+
+@media (max-width:420px){
+  .brand .sub{display:none}
+  .pick a.map{align-self:flex-start;margin-top:2px}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <div class="brand">
+      <span style="font-size:22px">🍽️</span>
+      <h1>오늘 점심 뭐 먹지</h1>
+      <span class="sub" id="poolInfo"></span>
+    </div>
+    <nav class="tabs" role="tablist">
+      <button role="tab" id="tab-pick"  aria-selected="true"  onclick="ui.tab('pick')">추천받기</button>
+      <button role="tab" id="tab-list"  aria-selected="false" onclick="ui.tab('list')">식당 관리</button>
+      <button role="tab" id="tab-log"   aria-selected="false" onclick="ui.tab('log')">기록</button>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <!-- ============ 추천받기 ============ -->
+  <section id="view-pick">
+    <div class="card">
+      <h2>어디서 먹나요</h2>
+      <div class="row">
+        <div style="flex:1;min-width:180px">
+          <label class="f" for="loc">회사 위치</label>
+          <select id="loc" onchange="ui.setLoc(this.value)"></select>
+        </div>
+        <div style="flex:1;min-width:150px">
+          <label class="f">도보 <span class="val" id="walkV">15분</span> 이내</label>
+          <input type="range" id="walk" min="3" max="25" step="1" value="15"
+                 oninput="ui.setWalk(this.value)">
+        </div>
+      </div>
+      <p class="note" id="locNote"></p>
+    </div>
+
+    <div class="card">
+      <h2>오늘 조건</h2>
+      <div class="row">
+        <div style="flex:1;min-width:150px">
+          <label class="f">예산 <span class="val" id="budV">15,000원</span>까지</label>
+          <input type="range" id="bud" min="7000" max="25000" step="1000" value="15000"
+                 oninput="ui.setBud(this.value)">
+        </div>
+      </div>
+      <div class="row" style="display:block">
+        <label class="f">인원</label>
+        <div class="chips" id="party"></div>
+      </div>
+      <div class="row" style="display:block">
+        <label class="f">오늘 기분 <span style="opacity:.7">(여러 개 고를 수 있어요)</span></label>
+        <div class="chips" id="mood"></div>
+      </div>
+      <div class="row" style="display:block">
+        <label class="f">이런 날</label>
+        <div class="chips" id="weather"></div>
+      </div>
+    </div>
+
+    <button class="btn" onclick="app.recommend(false)">🎲 메뉴 5개 뽑기</button>
+
+    <div id="results" style="margin-top:18px"></div>
+  </section>
+
+  <!-- ============ 식당 관리 ============ -->
+  <section id="view-list" hidden>
+    <div class="card">
+      <h2>안 먹는 종류 빼기</h2>
+      <div class="chips" id="excl"></div>
+      <p class="note">선택한 종류는 추천에서 완전히 제외됩니다.</p>
+    </div>
+
+    <div class="card">
+      <h2>식당 직접 추가</h2>
+      <div class="row">
+        <div style="flex:2;min-width:160px">
+          <label class="f" for="nn">가게 이름</label>
+          <input type="text" id="nn" placeholder="예: 김씨네 순대국">
+        </div>
+        <div style="flex:1;min-width:110px">
+          <label class="f" for="nc">종류</label>
+          <select id="nc"></select>
+        </div>
+        <div style="flex:1;min-width:90px">
+          <label class="f" for="nw">도보(분)</label>
+          <input type="number" id="nw" min="1" max="40" value="5">
+        </div>
+        <div style="flex:1;min-width:100px">
+          <label class="f" for="np">1인 가격</label>
+          <input type="number" id="np" min="1000" step="500" placeholder="10000">
+        </div>
+      </div>
+      <div class="row">
+        <button class="btn sm" onclick="app.addCustom()">추가하기</button>
+        <span class="note" style="margin:0" id="addMsg"></span>
+      </div>
+      <p class="note">현재 선택한 위치(<span id="addLoc"></span>) 기준으로 저장됩니다.</p>
+    </div>
+
+    <div class="card">
+      <h2>근처 식당 <span id="listCount" style="color:var(--accent)"></span></h2>
+      <div id="listBody"></div>
+      <p class="note">가격은 종류별 평균 추정치입니다. 실제와 다르면 눌러서 고쳐주세요 —
+        고친 값은 이 브라우저에 저장되고 추천에 바로 반영됩니다.</p>
+    </div>
+
+    <div class="card">
+      <h2>데이터 백업</h2>
+      <div class="row">
+        <button class="btn sm ghost" onclick="app.exportData()">JSON 내려받기</button>
+        <button class="btn sm ghost" onclick="app.copyData()">클립보드 복사</button>
+        <button class="btn sm ghost" onclick="document.getElementById('imp').click()">불러오기</button>
+        <input type="file" id="imp" accept="application/json" hidden onchange="app.importData(this)">
+      </div>
+      <p class="note" id="backupMsg">내 설정·평점·기록은 이 브라우저에만 저장됩니다.
+        기기를 바꾸기 전에 내려받아 두세요.</p>
+    </div>
+  </section>
+
+  <!-- ============ 기록 ============ -->
+  <section id="view-log" hidden>
+    <div class="card">
+      <h2>이번 달 뭘 먹었나</h2>
+      <div id="stats"></div>
+    </div>
+    <div class="card">
+      <h2>최근 기록</h2>
+      <div id="logBody"></div>
+    </div>
+  </section>
+
+</main>
+
+<div id="modalRoot"></div>
+
+<script>
+"use strict";
+
+/* ===================== 고정 데이터 ===================== */
+
+const SEED = [{"i":"36c81812","n":"강남쌀국수 신논현점","c":"asian","a":"서울특별시 서초구 사평대로55길 10-11","lat":37.504742,"lng":127.023274},{"i":"1795b686","n":"고수한잎","c":"asian","a":"서울특별시 마포구 성암로15길 12","lat":37.578183,"lng":126.895633},{"i":"86493361","n":"까몬 판교아브뉴프랑점","c":"asian","a":"경기도 성남시 분당구 동판교로177번길 25","lat":37.397889,"lng":127.11377},{"i":"4a42639b","n":"대성성 서순라길","c":"asian","a":"서울특별시 종로구 율곡로10길 25-3","lat":37.576486,"lng":126.991224},{"i":"892224e8","n":"뎁짜이 대학로점","c":"asian","a":"서울특별시 종로구 대학로11길 41-4","lat":37.582397,"lng":126.999235},{"i":"a5b50235","n":"르메콩","c":"asian","a":"경기도 성남시 분당구 대왕판교로 670","lat":37.402029,"lng":127.106652},{"i":"de578895","n":"마마문스 판교본점","c":"asian","a":"경기도 성남시 분당구 판교역로 145","lat":37.393517,"lng":127.109019},{"i":"d7bee10f","n":"반포식스 판교역점","c":"asian","a":"경기도 성남시 분당구 판교역로192번길 12","lat":37.397491,"lng":127.110745},{"i":"aada0d56","n":"베트남이랑","c":"asian","a":"서울특별시 서초구 서초대로77길 15","lat":37.498996,"lng":127.026139},{"i":"e5ff14d8","n":"벳남미식 구디직영점","c":"asian","a":"서울특별시 구로구 디지털로 272","lat":37.48278,"lng":126.894839},{"i":"e0807d23","n":"비욘드비엣남 국회의사당점","c":"asian","a":"서울특별시 영등포구 의사당대로 26","lat":37.526537,"lng":126.918107},{"i":"d60caf93","n":"비욘드비엣남 여의도점","c":"asian","a":"서울특별시 영등포구 여의대방로 383","lat":37.519183,"lng":126.931364},{"i":"8e56ae4d","n":"빅포1982 상암점","c":"asian","a":"서울특별시 마포구 매봉산로2안길 7","lat":37.577939,"lng":126.894977},{"i":"b2f1e6bf","n":"상암쌀국수","c":"asian","a":"서울특별시 마포구 월드컵북로 381","lat":37.57785,"lng":126.889795},{"i":"cb068415","n":"서촌 깜온 본점","c":"asian","a":"서울특별시 종로구 자하문로2길 18","lat":37.57644,"lng":126.973691},{"i":"287badc9","n":"원포 구로디지털단지점","c":"asian","a":"서울특별시 구로구 디지털로 288","lat":37.483843,"lng":126.895375},{"i":"aefc9480","n":"을지깐깐","c":"asian","a":"서울특별시 중구 을지로12길 12","lat":37.565747,"lng":126.991063},{"i":"24fa8500","n":"일포베트남쌀국수","c":"asian","a":"서울특별시 마포구 성암로13길 28","lat":37.576819,"lng":126.896932},{"i":"aa089b30","n":"타마린드 디타워점","c":"asian","a":"서울특별시 종로구 종로3길 17","lat":37.571018,"lng":126.978969},{"i":"c22faf94","n":"팬앤포","c":"asian","a":"서울특별시 마포구 매봉산로 75","lat":37.578519,"lng":126.892951},{"i":"813f29b6","n":"퍼부어 더현대서울","c":"asian","a":"서울특별시 영등포구 여의대로 108","lat":37.526058,"lng":126.927809},{"i":"c19762e8","n":"포490 베트남 쌀국수","c":"asian","a":"서울특별시 강남구 강남대로 396","lat":37.497909,"lng":127.027098},{"i":"aa59b9ca","n":"포비엣베트남쌀국수","c":"asian","a":"서울특별시 구로구 디지털로33길 27","lat":37.486086,"lng":126.895095},{"i":"842a0cb1","n":"포아시아","c":"asian","a":"서울특별시 영등포구 의사당대로 127","lat":37.520255,"lng":126.926233},{"i":"febf19f1","n":"하노이의아침","c":"asian","a":"서울특별시 서초구 강남대로55길 24","lat":37.495599,"lng":127.025666},{"i":"e88c77bf","n":"하롱베이의하루 여의도본점","c":"asian","a":"서울특별시 영등포구 의사당대로 38","lat":37.525984,"lng":126.91817},{"i":"de81bf14","n":"헤이준쌀국수 판교알파돔점","c":"asian","a":"경기도 성남시 분당구 판교역로 152","lat":37.394238,"lng":127.110314},{"i":"318f126f","n":"호앙비엣 구로디지털단지역 직영점","c":"asian","a":"서울특별시 구로구 시흥대로 559","lat":37.483108,"lng":126.901234},{"i":"2d21b63f","n":"효뜨 강남점","c":"asian","a":"서울특별시 강남구 강남대로 358","lat":37.495069,"lng":127.029809},{"i":"a5bd5e1f","n":"효자동쌀국수미","c":"asian","a":"서울특별시 구로구 시흥대로163길 33","lat":37.481842,"lng":126.898179},{"i":"007f79cc","n":"교남김밥","c":"bunsik","a":"서울특별시 종로구 경교장길 35","lat":37.56838,"lng":126.965293},{"i":"a7dbf4fa","n":"김가네 동대문디자인플라자점","c":"bunsik","a":"서울특별시 중구 을지로 281","lat":37.566827,"lng":127.009735},{"i":"d2d70fcb","n":"꼬소한부뚜막 광화문광장점","c":"bunsik","a":"서울특별시 종로구 세종대로23길 15","lat":37.571514,"lng":126.975663},{"i":"e2cdfdda","n":"낭만김밥","c":"bunsik","a":"서울특별시 중구 명동7길 21","lat":37.564893,"lng":126.983682},{"i":"58958e7b","n":"닭장수김밥 강남직영점","c":"bunsik","a":"서울특별시 강남구 테헤란로4길 32","lat":37.49627,"lng":127.030317},{"i":"abba3dc1","n":"닭장수김밥 여의도점","c":"bunsik","a":"서울특별시 영등포구 국제금융로6길 30","lat":37.521725,"lng":126.926615},{"i":"2dd1b6fc","n":"덕자네방앗간","c":"bunsik","a":"서울특별시 서초구 서초대로77길 62","lat":37.50275,"lng":127.02406},{"i":"516f296c","n":"두끼 강남역점","c":"bunsik","a":"서울특별시 강남구 강남대로98길 9","lat":37.500734,"lng":127.027341},{"i":"8ca87abb","n":"레드175 판교점","c":"bunsik","a":"경기도 성남시 분당구 판교역로 136","lat":37.392102,"lng":127.110524},{"i":"37e4bccd","n":"마리아분식 더현대파크원점","c":"bunsik","a":"서울특별시 영등포구 여의대로 108","lat":37.527213,"lng":126.927809},{"i":"e0790da0","n":"명화당 명동1호점","c":"bunsik","a":"서울특별시 중구 명동4길 30","lat":37.562395,"lng":126.983795},{"i":"ce89a29c","n":"박선영 김밥","c":"bunsik","a":"서울특별시 영등포구 여의나루로 113","lat":37.525949,"lng":126.93084},{"i":"577851bb","n":"백현김밥","c":"bunsik","a":"경기도 성남시 분당구 동판교로 55","lat":37.388247,"lng":127.114668},{"i":"61e0dc38","n":"병아리김밥 명동점","c":"bunsik","a":"서울특별시 중구 명동10길 19-3","lat":37.563,"lng":126.985589},{"i":"4019e970","n":"보슬보슬 역삼본점","c":"bunsik","a":"서울특별시 강남구 논현로85길 59","lat":37.497709,"lng":127.033268},{"i":"9248d8fb","n":"뽁 현대아울렛 동대문점","c":"bunsik","a":"서울특별시 중구 장충단로13길 20","lat":37.568878,"lng":127.007507},{"i":"17bb249d","n":"삼형제김밥 상암점","c":"bunsik","a":"서울특별시 마포구 월드컵북로 396","lat":37.579342,"lng":126.889819},{"i":"502206aa","n":"삼형제김밥 판교역점","c":"bunsik","a":"경기도 성남시 분당구 대왕판교로606번길 58","lat":37.395235,"lng":127.113472},{"i":"c030edb7","n":"스쿨푸드 판교점","c":"bunsik","a":"경기도 성남시 분당구 동판교로52번길 17-8","lat":37.386272,"lng":127.115162},{"i":"c7aba4e2","n":"식물원김밥 구로디지털단지점","c":"bunsik","a":"서울특별시 구로구 디지털로34길 43","lat":37.485151,"lng":126.898841},{"i":"c2b75b2b","n":"싸다김밥 동대문2호점","c":"bunsik","a":"서울특별시 중구 장충단로13길 11","lat":37.567827,"lng":127.008061},{"i":"a120eabb","n":"싸다김밥 을지로입구역점","c":"bunsik","a":"서울특별시 중구 명동3길 44","lat":37.565633,"lng":126.983641},{"i":"7b381eb7","n":"에그키친","c":"bunsik","a":"서울특별시 강남구 테헤란로21길 6","lat":37.50068,"lng":127.034605},{"i":"588d0653","n":"여우애 김밥 상암DMC점","c":"bunsik","a":"서울특별시 마포구 월드컵북로 396","lat":37.579342,"lng":126.889819},{"i":"1196417b","n":"여우애김밥 여의도점","c":"bunsik","a":"서울특별시 영등포구 국회대로76길 16","lat":37.529962,"lng":126.921672},{"i":"8fa900f3","n":"영미화김밥 상암점","c":"bunsik","a":"서울특별시 마포구 월드컵북로 381","lat":37.577965,"lng":126.889901},{"i":"0f48e8c0","n":"영심이떡볶이&김밥 판교2호점","c":"bunsik","a":"경기도 성남시 분당구 대왕판교로606번길 45","lat":37.397047,"lng":127.111841},{"i":"2b4bad64","n":"오방김밥 구로디지털단지점","c":"bunsik","a":"서울특별시 구로구 디지털로26길 43","lat":37.480851,"lng":126.894752},{"i":"12d9dee5","n":"오토김밥 상암점","c":"bunsik","a":"서울특별시 마포구 월드컵북로 434","lat":37.581653,"lng":126.885957},{"i":"2b76f2d3","n":"장원김밥 서초점","c":"bunsik","a":"서울특별시 서초구 서초대로77길 31","lat":37.500649,"lng":127.025436},{"i":"18a4d011","n":"즐겨찾기","c":"bunsik","a":"서울특별시 구로구 디지털로31길 81","lat":37.486368,"lng":126.891313},{"i":"097adb92","n":"진김밥","c":"bunsik","a":"서울특별시 구로구 도림천로 477","lat":37.485214,"lng":126.901466},{"i":"386ab772","n":"청담동마녀김밥 구로디지털점","c":"bunsik","a":"서울특별시 구로구 디지털로34길 55","lat":37.484302,"lng":126.898938},{"i":"e3541f69","n":"청담동마녀김밥 상암점","c":"bunsik","a":"서울특별시 마포구 월드컵북로54길 17","lat":37.581634,"lng":126.88835},{"i":"a0f5a99f","n":"타이거 꼬마김밥 언주역 본점","c":"bunsik","a":"서울특별시 강남구 봉은사로 170","lat":37.506767,"lng":127.032799},{"i":"50c9a96c","n":"틈새라면 여의도KBS본관점","c":"bunsik","a":"서울특별시 영등포구 의사당대로 38","lat":37.525821,"lng":126.917954},{"i":"fc6c3171","n":"현선이네 청계즉석점","c":"bunsik","a":"서울특별시 중구 남대문로 112","lat":37.567129,"lng":126.983031},{"i":"b684647e","n":"힘난다떡볶이 본점","c":"bunsik","a":"서울특별시 강남구 강남대로84길 15","lat":37.497165,"lng":127.029942},{"i":"380c94af","n":"개화 명동점","c":"chinese","a":"서울특별시 중구 남대문로 52-5","lat":37.562082,"lng":126.98185},{"i":"3a4a5a15","n":"남소관 우육도삭면","c":"chinese","a":"서울특별시 강남구 테헤란로1길 19","lat":37.499676,"lng":127.027576},{"i":"1263c7fd","n":"덕후선생 아브뉴프랑 판교점","c":"chinese","a":"경기도 성남시 분당구 동판교로177번길 25","lat":37.397115,"lng":127.113365},{"i":"625081d3","n":"란주칼면","c":"chinese","a":"서울특별시 중구 소공로 64","lat":37.560972,"lng":126.982108},{"i":"6c5c1a47","n":"만월","c":"chinese","a":"서울특별시 강남구 언주로81길 19","lat":37.499938,"lng":127.042168},{"i":"00ae992a","n":"모범반점","c":"chinese","a":"서울특별시 마포구 월드컵북로56길 19","lat":37.582191,"lng":126.88811},{"i":"14e83fa0","n":"봉게짬뽕","c":"chinese","a":"서울특별시 강남구 봉은사로6길 23","lat":37.503577,"lng":127.027264},{"i":"4a12eda5","n":"삼성각","c":"chinese","a":"서울특별시 서초구 서초대로78길 42","lat":37.494083,"lng":127.028233},{"i":"1a57f777","n":"셰셰","c":"chinese","a":"서울특별시 마포구 월드컵북로50길 14-6","lat":37.577038,"lng":126.893978},{"i":"72a57fea","n":"신승관","c":"chinese","a":"서울특별시 종로구 종로 19","lat":37.570834,"lng":126.979861},{"i":"af7d6062","n":"신승반점 현대백화점 판교점","c":"chinese","a":"경기도 성남시 분당구 판교역로146번길 20","lat":37.393384,"lng":127.11169},{"i":"2223b67c","n":"아방궁","c":"chinese","a":"서울특별시 강남구 역삼로1길 18","lat":37.494469,"lng":127.030598},{"i":"e7ebbc9b","n":"안사부 구로디지털단지점","c":"chinese","a":"서울특별시 구로구 디지털로31길 38-9","lat":37.485883,"lng":126.892997},{"i":"fcf4d252","n":"양자강","c":"chinese","a":"서울특별시 영등포구 63로 36","lat":37.519615,"lng":126.938528},{"i":"705c811b","n":"오구반점","c":"chinese","a":"서울특별시 중구 수표로 60","lat":37.566518,"lng":126.98985},{"i":"2a4c1983","n":"왕산","c":"chinese","a":"서울특별시 영등포구 여의나루로 117","lat":37.526245,"lng":126.931085},{"i":"d7bc90d2","n":"용무있습니까 상암점","c":"chinese","a":"서울특별시 마포구 성암로 267","lat":37.581058,"lng":126.890987},{"i":"26b7595c","n":"원흥","c":"chinese","a":"서울특별시 중구 다동길 46","lat":37.567894,"lng":126.981901},{"i":"38aab733","n":"유방녕 현대백화점 판교점","c":"chinese","a":"경기도 성남시 분당구 판교역로146번길 20","lat":37.393033,"lng":127.112398},{"i":"86d66a3c","n":"제이스팟","c":"chinese","a":"경기도 성남시 분당구 판교역로 152","lat":37.394321,"lng":127.110325},{"i":"9d63bcb8","n":"중화백반","c":"chinese","a":"서울특별시 구로구 디지털로34길 55","lat":37.484159,"lng":126.899458},{"i":"e79b7e1d","n":"짬뽕지존 역삼점","c":"chinese","a":"서울특별시 강남구 테헤란로10길 21","lat":37.498071,"lng":127.032753},{"i":"d5e33c54","n":"차슈밍","c":"chinese","a":"서울특별시 강남구 강남대로94길 21","lat":37.499673,"lng":127.028939},{"i":"0ac06fec","n":"천용","c":"chinese","a":"서울특별시 강남구 언주로90길 12","lat":37.502319,"lng":127.04413},{"i":"6b6effa5","n":"초선과여포","c":"chinese","a":"서울특별시 서초구 서초대로78길 44","lat":37.493897,"lng":127.028505},{"i":"0fd147d0","n":"추천해꼬막짬뽕 상암dmc점","c":"chinese","a":"서울특별시 마포구 매봉산로 75","lat":37.578519,"lng":126.892951},{"i":"7b08f347","n":"카이 강남역점","c":"chinese","a":"서울특별시 강남구 테헤란로8길 21","lat":37.497535,"lng":127.032106},{"i":"fbf6aaed","n":"카이 여의도점","c":"chinese","a":"서울특별시 영등포구 의사당대로1길 25","lat":37.519891,"lng":126.929709},{"i":"7529afe4","n":"태양 종각점","c":"chinese","a":"서울특별시 종로구 우정국로 42-2","lat":37.572842,"lng":126.983374},{"i":"0b02a6b8","n":"팔당반점 동여의도점","c":"chinese","a":"서울특별시 영등포구 의사당대로 127","lat":37.520348,"lng":126.926086},{"i":"a51a8ec8","n":"팔당반점 여의도BNK직영점","c":"chinese","a":"서울특별시 영등포구 국제금융로2길 24","lat":37.524316,"lng":126.924845},{"i":"286e64ce","n":"페이딤 판교점","c":"chinese","a":"경기도 성남시 분당구 판교역로 152","lat":37.394213,"lng":127.110289},{"i":"94177865","n":"홍월이륙","c":"chinese","a":"서울특별시 마포구 월드컵북로44길 35-3","lat":37.576275,"lng":126.895391},{"i":"2c6f96e6","n":"곰소바 돈까스","c":"donkatsu","a":"서울특별시 서대문구 경기대로 64","lat":37.564534,"lng":126.96409},{"i":"96dddcf1","n":"돈까스브로스 구로디지털단지점","c":"donkatsu","a":"서울특별시 구로구 디지털로 288","lat":37.483732,"lng":126.895366},{"i":"373efdaa","n":"마이클돈까스 본점","c":"donkatsu","a":"서울특별시 마포구 월드컵북로 381","lat":37.578368,"lng":126.889644},{"i":"77d19e63","n":"명동돈가스","c":"donkatsu","a":"서울특별시 중구 명동3길 8","lat":37.564026,"lng":126.983556},{"i":"4b967203","n":"모모돈까스","c":"donkatsu","a":"서울특별시 영등포구 국제금융로 78","lat":37.520829,"lng":126.931168},{"i":"302b4447","n":"모모야 동대문 DDP점","c":"donkatsu","a":"서울특별시 중구 을지로 281","lat":37.56756,"lng":127.009813},{"i":"27d2e4e9","n":"부자돈까스","c":"donkatsu","a":"서울특별시 중구 수표로 30","lat":37.563811,"lng":126.990312},{"i":"076cbf50","n":"분지로 한국본점","c":"donkatsu","a":"서울특별시 중구 남대문로 81","lat":37.564696,"lng":126.981612},{"i":"72418cd8","n":"상암동 경양식당","c":"donkatsu","a":"서울특별시 마포구 월드컵북로54길 17","lat":37.581307,"lng":126.888712},{"i":"a037616a","n":"우메돈","c":"donkatsu","a":"서울특별시 중구 충무로 31","lat":37.564013,"lng":126.992758},{"i":"d092f02e","n":"원조남산왕돈까스 명동본점","c":"donkatsu","a":"서울특별시 중구 명동7길 21","lat":37.564749,"lng":126.983691},{"i":"a6f9d246","n":"을지돈가스 명동본점","c":"donkatsu","a":"서울특별시 중구 명동9길 10","lat":37.564327,"lng":126.984998},{"i":"83d74e48","n":"정돈 현대백화점 판교점","c":"donkatsu","a":"경기도 성남시 분당구 판교역로146번길 20","lat":37.392279,"lng":127.112007},{"i":"384788e0","n":"정돈프리미엄 더현대 서울점","c":"donkatsu","a":"서울특별시 영등포구 여의대로 108","lat":37.525839,"lng":126.928007},{"i":"f39f25fe","n":"카츠쇼신 판교아브뉴프랑점","c":"donkatsu","a":"경기도 성남시 분당구 동판교로177번길 25","lat":37.397744,"lng":127.113727},{"i":"1d7d82ef","n":"카츠쇼쿠도우 판교본점","c":"donkatsu","a":"경기도 성남시 분당구 판교역로 152","lat":37.394251,"lng":127.110344},{"i":"ebd60687","n":"카츠아지 여의도점","c":"donkatsu","a":"서울특별시 영등포구 국제금융로 39","lat":37.524265,"lng":126.930297},{"i":"f802569b","n":"킷토","c":"donkatsu","a":"서울특별시 마포구 매봉산로2길 23","lat":37.578207,"lng":126.895244},{"i":"79f1e9e7","n":"흥도식당 구로디지털단지점","c":"donkatsu","a":"서울특별시 구로구 디지털로26길 123","lat":37.48311,"lng":126.897899},{"i":"3c578c1d","n":"광화문24시감자탕","c":"gukbap","a":"서울특별시 종로구 종로3길 42","lat":37.572235,"lng":126.979412},{"i":"3d220504","n":"광화문국밥 판교점","c":"gukbap","a":"경기도 성남시 분당구 판교역로 152","lat":37.394106,"lng":127.110443},{"i":"e3eeabfb","n":"금성관 나주곰탕","c":"gukbap","a":"서울특별시 중구 남대문로 29","lat":37.5614,"lng":126.978904},{"i":"f3e8ea36","n":"나주곰탕 종로 인의동","c":"gukbap","a":"서울특별시 종로구 창경궁로 119","lat":37.573083,"lng":126.997443},{"i":"bcdb7f79","n":"남파랑국밥 상암본점","c":"gukbap","a":"서울특별시 마포구 월드컵북로44길 81","lat":37.577762,"lng":126.893353},{"i":"f5498655","n":"농민백암순대 여의도점","c":"gukbap","a":"서울특별시 영등포구 국회대로 780","lat":37.529854,"lng":126.919479},{"i":"3da38941","n":"농민백암순대 역삼직영점","c":"gukbap","a":"서울특별시 강남구 역삼로3길 20-4","lat":37.494937,"lng":127.031447},{"i":"a8f20f19","n":"담원순대 강남직영점","c":"gukbap","a":"서울특별시 강남구 테헤란로4길 34","lat":37.496113,"lng":127.030336},{"i":"376a1af1","n":"돈맛꿀","c":"gukbap","a":"서울특별시 종로구 수표로22길 2","lat":37.571074,"lng":126.989565},{"i":"9c771fc3","n":"돈암고깃국","c":"gukbap","a":"서울특별시 마포구 월드컵북로54길 25","lat":37.581858,"lng":126.889501},{"i":"0a8cb096","n":"맑은곰탕 고음 종로","c":"gukbap","a":"서울특별시 종로구 인사동3길 35","lat":37.5715,"lng":126.985015},{"i":"b7bab3dc","n":"미례국밥 강남삼성타운점","c":"gukbap","a":"서울특별시 서초구 서초대로74길 23","lat":37.495539,"lng":127.026975},{"i":"1848e824","n":"박순자아우내순대 구로점","c":"gukbap","a":"서울특별시 구로구 디지털로31길 38-9","lat":37.485937,"lng":126.893032},{"i":"e4d9b109","n":"복돈이 가마솥 순대국 강남본점","c":"gukbap","a":"서울특별시 강남구 테헤란로37길 22","lat":37.503648,"lng":127.040556},{"i":"8b176aa0","n":"본가성심집","c":"gukbap","a":"서울특별시 영등포구 63로 45","lat":37.520549,"lng":126.938454},{"i":"dc969606","n":"상암뚝배기","c":"gukbap","a":"서울특별시 마포구 월드컵북로 396","lat":37.579342,"lng":126.889819},{"i":"0895a614","n":"순배순대국","c":"gukbap","a":"서울특별시 구로구 디지털로30길 31","lat":37.48275,"lng":126.896235},{"i":"1fd94dc3","n":"신가원 설렁탕","c":"gukbap","a":"서울특별시 중구 을지로3길 21","lat":37.567025,"lng":126.9815},{"i":"25ca7c62","n":"신주옥미 강남점","c":"gukbap","a":"서울특별시 강남구 테헤란로10길 21","lat":37.497863,"lng":127.032933},{"i":"a50dbc8f","n":"신주옥미 판교점","c":"gukbap","a":"경기도 성남시 분당구 대왕판교로606번길 31","lat":37.396478,"lng":127.110713},{"i":"e4d3590e","n":"영천얼큰돼지국밥 강남본점","c":"gukbap","a":"서울특별시 강남구 봉은사로44길 68","lat":37.505419,"lng":127.042926},{"i":"34218583","n":"우리순대국","c":"gukbap","a":"서울특별시 구로구 디지털로32가길 25","lat":37.482162,"lng":126.898936},{"i":"ad1631de","n":"정남옥 구로디지털지점","c":"gukbap","a":"서울특별시 구로구 디지털로33길 27","lat":37.486199,"lng":126.894848},{"i":"53024d17","n":"정남옥 역삼점","c":"gukbap","a":"서울특별시 강남구 강남대로94길 72","lat":37.500655,"lng":127.033112},{"i":"d51eeb86","n":"정백선순대 판교역점","c":"gukbap","a":"경기도 성남시 분당구 대왕판교로606번길 58","lat":37.394972,"lng":127.113465},{"i":"04321f67","n":"진순대","c":"gukbap","a":"서울특별시 종로구 삼봉로 80-14","lat":37.572022,"lng":126.98166},{"i":"6bf77a7c","n":"청담동순도리 강남역점","c":"gukbap","a":"서울특별시 강남구 역삼로3길 8","lat":37.494055,"lng":127.031733},{"i":"932af3b0","n":"청담동순도리 여의도점","c":"gukbap","a":"서울특별시 영등포구 의사당대로 96","lat":37.521521,"lng":126.922872},{"i":"b99205d1","n":"청진동장터순대국","c":"gukbap","a":"서울특별시 종로구 종로5길 40","lat":37.572097,"lng":126.980446},{"i":"ee6aa908","n":"청진옥","c":"gukbap","a":"서울특별시 종로구 종로3길 32","lat":37.571753,"lng":126.979421},{"i":"897738be","n":"태진옥","c":"gukbap","a":"서울특별시 중구 무교로 17-25","lat":37.567437,"lng":126.978558},{"i":"15c846cd","n":"한첩 순대국밥 서여의도점","c":"gukbap","a":"서울특별시 영등포구 의사당대로 38","lat":37.525741,"lng":126.919637},{"i":"5b5a6de2","n":"화목순대국","c":"gukbap","a":"서울특별시 영등포구 여의대방로 383","lat":37.519401,"lng":126.931659},{"i":"97f05217","n":"감탄성신 강남본점","c":"japanese","a":"서울특별시 강남구 강남대로106길 14","lat":37.502952,"lng":127.026704},{"i":"08169684","n":"골목초밥","c":"japanese","a":"서울특별시 마포구 성암로15길 4","lat":37.578583,"lng":126.895555},{"i":"8d796df5","n":"김남완초밥집","c":"japanese","a":"서울특별시 강남구 테헤란로20길 19","lat":37.498415,"lng":127.034889},{"i":"c3227243","n":"김영섭초밥","c":"japanese","a":"서울특별시 마포구 월드컵북로 352-18","lat":37.577669,"lng":126.89331},{"i":"8d2b5f3b","n":"낙원테산도 현대백화점 판교점","c":"japanese","a":"경기도 성남시 분당구 판교역로146번길 20","lat":37.393107,"lng":127.112398},{"i":"5d092b2a","n":"도우또 을지로","c":"japanese","a":"서울특별시 중구 을지로18길 42","lat":37.564707,"lng":126.994041},{"i":"95e2f93a","n":"동해도 광화문점","c":"japanese","a":"서울특별시 중구 무교로 28","lat":37.56843,"lng":126.979482},{"i":"cdc1a350","n":"동해도 일식","c":"japanese","a":"서울특별시 영등포구 은행로 25","lat":37.5287,"lng":126.921401},{"i":"0502b431","n":"마쓰이 슈퍼회전초밥","c":"japanese","a":"서울특별시 구로구 디지털로34길 27","lat":37.485473,"lng":126.898223},{"i":"ef8fc2b1","n":"만땅스시 역삼점","c":"japanese","a":"서울특별시 강남구 역삼로 128","lat":37.494051,"lng":127.03375},{"i":"145adf39","n":"멘츠루 시청점","c":"japanese","a":"서울특별시 중구 서소문로11길 2","lat":37.562994,"lng":126.973125},{"i":"e30082e5","n":"백초밥","c":"japanese","a":"서울특별시 강남구 논현로95길 29-16","lat":37.501035,"lng":127.033994},{"i":"cc4081ea","n":"사토루 더 서촌","c":"japanese","a":"서울특별시 종로구 자하문로7길 11","lat":37.578364,"lng":126.970986},{"i":"1a86f3d1","n":"스시도온","c":"japanese","a":"서울특별시 서초구 서초대로74길 23","lat":37.495623,"lng":127.027107},{"i":"3ae6e903","n":"스시메이진 구로","c":"japanese","a":"서울특별시 구로구 디지털로 300","lat":37.485335,"lng":126.896901},{"i":"037f69cf","n":"스시비쇼쿠","c":"japanese","a":"서울특별시 구로구 디지털로34길 55","lat":37.483724,"lng":126.899257},{"i":"249a1fba","n":"스시코호시","c":"japanese","a":"경기도 성남시 분당구 판교역로 230","lat":37.401157,"lng":127.110155},{"i":"b797a48d","n":"스시혼 아브뉴프랑 판교본점","c":"japanese","a":"경기도 성남시 분당구 동판교로177번길 25","lat":37.397126,"lng":127.113321},{"i":"6aded1a9","n":"시카노이에 상암점","c":"japanese","a":"서울특별시 마포구 성암로13길 16","lat":37.577268,"lng":126.896575},{"i":"2c18af9b","n":"신희초밥","c":"japanese","a":"서울특별시 영등포구 국제금융로2길 37","lat":37.522986,"lng":126.92431},{"i":"66c1caa5","n":"아나바 스시 엔 누들","c":"japanese","a":"경기도 성남시 분당구 대왕판교로606번길 58","lat":37.395179,"lng":127.113788},{"i":"666ae949","n":"양산도 역삼점","c":"japanese","a":"서울특별시 강남구 논현로85길 70","lat":37.497658,"lng":127.032472},{"i":"e1f14214","n":"어담익선","c":"japanese","a":"서울특별시 종로구 돈화문로11나길 27","lat":37.573995,"lng":126.990165},{"i":"db4e41c5","n":"오레노 야끼 종로점","c":"japanese","a":"서울특별시 종로구 우정국로 45-27","lat":37.573061,"lng":126.981364},{"i":"aea1548f","n":"오마카세 스시이찌 판교점","c":"japanese","a":"경기도 성남시 분당구 판교역로192번길 22","lat":37.39803,"lng":127.11203},{"i":"1e6cf7a7","n":"오마카세 오사이초밥 상암점","c":"japanese","a":"서울특별시 마포구 월드컵북로44길 33","lat":37.576307,"lng":126.89552},{"i":"c6fbae29","n":"오모시로이규카츠","c":"japanese","a":"서울특별시 강남구 봉은사로4길 40","lat":37.502349,"lng":127.026947},{"i":"86b6d68e","n":"오복수산 씨티플라자 여의도점","c":"japanese","a":"서울특별시 영등포구 국제금융로2길 17","lat":37.524064,"lng":126.926042},{"i":"025e7781","n":"오복수산 판교점","c":"japanese","a":"경기도 성남시 분당구 분당내곡로 131","lat":37.395452,"lng":127.11215},{"i":"9e89ace8","n":"오봉카츠","c":"japanese","a":"서울특별시 종로구 자하문로5길 24-1","lat":37.57779,"lng":126.970488},{"i":"ddf5e92c","n":"오사무식당 역삼점","c":"japanese","a":"서울특별시 강남구 테헤란로 142","lat":37.499675,"lng":127.034933},{"i":"b9140f5f","n":"오제제 강남점","c":"japanese","a":"서울특별시 강남구 강남대로 358","lat":37.495069,"lng":127.029809},{"i":"e716432b","n":"온미동","c":"japanese","a":"서울특별시 영등포구 여의나루로 67-8","lat":37.52384,"lng":126.926104},{"i":"f98bb745","n":"우니도 강남점","c":"japanese","a":"서울특별시 서초구 서초대로78길 28","lat":37.495292,"lng":127.027881},{"i":"33b1a523","n":"우동명가 기리야마본진","c":"japanese","a":"서울특별시 강남구 강남대로84길 23","lat":37.497127,"lng":127.030417},{"i":"3acfc65c","n":"우동키노야 구로디지털단지점","c":"japanese","a":"서울특별시 구로구 디지털로 300","lat":37.48501,"lng":126.896411},{"i":"295b75d3","n":"우동키노야 상암점","c":"japanese","a":"서울특별시 마포구 월드컵북로 402","lat":37.58021,"lng":126.888968},{"i":"d2a131d2","n":"이치규 강남신논현점","c":"japanese","a":"서울특별시 강남구 봉은사로4길 19","lat":37.50351,"lng":127.026639},{"i":"c4ec410c","n":"이치규 광화문점","c":"japanese","a":"서울특별시 종로구 종로 19","lat":37.570834,"lng":126.979861},{"i":"66e37104","n":"이치규 아브뉴프랑 판교점","c":"japanese","a":"경기도 성남시 분당구 동판교로177번길 25","lat":37.397365,"lng":127.113601},{"i":"cfd80ff3","n":"일품 광화문점","c":"japanese","a":"서울특별시 종로구 종로 19","lat":37.570834,"lng":126.979861},{"i":"70216e89","n":"일품 여의도점","c":"japanese","a":"서울특별시 영등포구 은행로 25","lat":37.52872,"lng":126.921545},{"i":"a9c61ef1","n":"진지덮밥&돈가스 역삼점","c":"japanese","a":"서울특별시 강남구 테헤란로25길 39","lat":37.503123,"lng":127.034807},{"i":"585d07e4","n":"최우영스시","c":"japanese","a":"서울특별시 구로구 디지털로 288","lat":37.483732,"lng":126.895366},{"i":"56988fc9","n":"치솟 역삼본점","c":"japanese","a":"서울특별시 강남구 봉은사로30길 59","lat":37.503727,"lng":127.036734},{"i":"3cf6332b","n":"카츠왕 강남직영점","c":"japanese","a":"서울특별시 강남구 강남대로94길 18","lat":37.499434,"lng":127.02874},{"i":"dc3890b0","n":"코끼리초밥 광화문점","c":"japanese","a":"서울특별시 종로구 세종대로 178","lat":37.572153,"lng":126.977882},{"i":"d704f300","n":"하하코식당 여의도","c":"japanese","a":"서울특별시 영등포구 63로 36","lat":37.51952,"lng":126.938503},{"i":"cae4f67f","n":"한","c":"japanese","a":"서울특별시 마포구 월드컵북로 352-6","lat":37.577152,"lng":126.893164},{"i":"365ab0f3","n":"행복한점","c":"japanese","a":"서울특별시 구로구 디지털로31길 120","lat":37.488805,"lng":126.890741},{"i":"6f076b17","n":"호시히카리 여의도점","c":"japanese","a":"서울특별시 영등포구 국제금융로2길 32","lat":37.523882,"lng":126.924138},{"i":"7cd6f2c8","n":"호코 구로직영점","c":"japanese","a":"서울특별시 구로구 디지털로 272","lat":37.482491,"lng":126.894409},{"i":"b31b8c44","n":"1992 덮밥&짜글이 강남본점","c":"korean","a":"서울특별시 강남구 강남대로84길 6","lat":37.49646,"lng":127.029156},{"i":"97c7c0e7","n":"갈비삼대 강남역삼점","c":"korean","a":"서울특별시 강남구 언주로93길 32-6","lat":37.503581,"lng":127.03935},{"i":"8f92e414","n":"강남진해장","c":"korean","a":"서울특별시 강남구 테헤란로5길 11","lat":37.499554,"lng":127.029244},{"i":"40f1335a","n":"거평식당","c":"korean","a":"서울특별시 강남구 테헤란로 322","lat":37.503472,"lng":127.04659},{"i":"0858c17c","n":"고려보쌈","c":"korean","a":"서울특별시 중구 세종대로20길 23","lat":37.567155,"lng":126.97875},{"i":"1de55a99","n":"고미고미","c":"korean","a":"경기도 성남시 분당구 중앙공원로31번길 42","lat":37.383426,"lng":127.125203},{"i":"ba6fa01c","n":"고수닭갈비","c":"korean","a":"서울특별시 강남구 강남대로96길 12","lat":37.499774,"lng":127.028172},{"i":"ba6158a4","n":"고슬담 브라이튼","c":"korean","a":"서울특별시 영등포구 국제금융로 39","lat":37.524359,"lng":126.93017},{"i":"1381181a","n":"김삼보","c":"korean","a":"서울특별시 구로구 디지털로34길 55","lat":37.484159,"lng":126.899458},{"i":"55c278ac","n":"넉넉한밥상","c":"korean","a":"서울특별시 마포구 월드컵북로 402","lat":37.580207,"lng":126.889043},{"i":"c5abe318","n":"다담정식","c":"korean","a":"서울특별시 종로구 청계천로 35","lat":37.569405,"lng":126.981396},{"i":"c46ba995","n":"다몽집 신논현본점","c":"korean","a":"서울특별시 강남구 강남대로100길 13","lat":37.501794,"lng":127.027157},{"i":"be737f03","n":"대물섬 종로점","c":"korean","a":"서울특별시 종로구 종로8길 21","lat":37.569133,"lng":126.984061},{"i":"b45b9a8e","n":"대보정 서울시청역점","c":"korean","a":"서울특별시 중구 세종대로9길 41","lat":37.561358,"lng":126.973016},{"i":"dc050577","n":"대선식당","c":"korean","a":"서울특별시 구로구 디지털로26길 111","lat":37.482261,"lng":126.89734},{"i":"2753a66a","n":"돈대리 돈까스백반","c":"korean","a":"서울특별시 영등포구 여의나루로 67","lat":37.523538,"lng":126.926556},{"i":"19f6fe06","n":"두배고기 강남역본점","c":"korean","a":"서울특별시 강남구 테헤란로6길 42","lat":37.495893,"lng":127.031519},{"i":"9cd5edb9","n":"모아 강남","c":"korean","a":"서울특별시 강남구 테헤란로5길 31","lat":37.500705,"lng":127.028812},{"i":"1a8e7a68","n":"무구옥","c":"korean","a":"서울특별시 종로구 율곡로1길 7","lat":37.576407,"lng":126.979907},{"i":"ac2a9858","n":"무월 서울시청점","c":"korean","a":"서울특별시 중구 소공로 116","lat":37.564864,"lng":126.978962},{"i":"8502b3a2","n":"병천유황오리 본점","c":"korean","a":"서울특별시 종로구 삼봉로 68","lat":37.572176,"lng":126.980927},{"i":"ffa652fe","n":"보정골","c":"korean","a":"경기도 성남시 분당구 대왕판교로606번길 41","lat":37.396476,"lng":127.111945},{"i":"ae746c09","n":"사랑방칼국수","c":"korean","a":"서울특별시 중구 퇴계로27길 46","lat":37.563287,"lng":126.991342},{"i":"764b9051","n":"승우네식당","c":"korean","a":"서울특별시 종로구 종로 190-4","lat":37.570489,"lng":126.998822},{"i":"202977a6","n":"아리연","c":"korean","a":"서울특별시 중구 세종대로12길 12","lat":37.561725,"lng":126.976806},{"i":"370dc784","n":"아탕","c":"korean","a":"서울특별시 마포구 성암로13길 14","lat":37.577359,"lng":126.896579},{"i":"8797c64c","n":"엉터리숯불구이","c":"korean","a":"경기도 성남시 분당구 분당로53번길 15","lat":37.384369,"lng":127.121954},{"i":"00fcf6db","n":"연탄마을","c":"korean","a":"서울특별시 강남구 테헤란로19길 13","lat":37.500953,"lng":127.033388},{"i":"9f7a21c3","n":"영광밥상","c":"korean","a":"서울특별시 서초구 사평대로56길 7","lat":37.503228,"lng":127.023578},{"i":"671b9485","n":"오복가정식","c":"korean","a":"서울특별시 마포구 월드컵북로44길 68","lat":37.577544,"lng":126.894136},{"i":"c15b0255","n":"오복수산참치 광화문점","c":"korean","a":"서울특별시 중구 무교로 21","lat":37.567906,"lng":126.978953},{"i":"12e76463","n":"옥순식당","c":"korean","a":"경기도 성남시 분당구 황새울로342번길 11","lat":37.386205,"lng":127.123708},{"i":"4ebc62dc","n":"온점 을지로점","c":"korean","a":"서울특별시 중구 을지로 29","lat":37.566491,"lng":126.981042},{"i":"101a9ccd","n":"우리집","c":"korean","a":"서울특별시 구로구 디지털로27나길 10-6","lat":37.483898,"lng":126.891855},{"i":"5db532a3","n":"우몽 판교본점","c":"korean","a":"경기도 성남시 분당구 판교역로192번길 12","lat":37.397393,"lng":127.110887},{"i":"f745b1ca","n":"원조감자탕일미집 여의도점","c":"korean","a":"서울특별시 영등포구 국제금융로8길 25","lat":37.520323,"lng":126.928487},{"i":"d34419ab","n":"육석관","c":"korean","a":"서울특별시 종로구 삼일대로15길 16","lat":37.568932,"lng":126.986638},{"i":"984c3a7e","n":"은민홍","c":"korean","a":"서울특별시 영등포구 국제금융로6길 17","lat":37.521839,"lng":126.928161},{"i":"ee706ee3","n":"은호식당","c":"korean","a":"서울특별시 중구 남대문시장4길 28-4","lat":37.559002,"lng":126.97707},{"i":"05255944","n":"이복희해장 종로직영점","c":"korean","a":"서울특별시 종로구 삼일대로 385","lat":37.568942,"lng":126.98736},{"i":"5feb4b4a","n":"일미식당","c":"korean","a":"서울특별시 종로구 삼일대로 428","lat":37.57283,"lng":126.987694},{"i":"a8af7e0e","n":"잊지마식당","c":"korean","a":"서울특별시 중구 퇴계로41길 47","lat":37.563959,"lng":126.995473},{"i":"bd92da8f","n":"장모님밥상","c":"korean","a":"서울특별시 강남구 강남대로94길 57","lat":37.500588,"lng":127.031931},{"i":"91b5d5bf","n":"장인닭갈비 강남점","c":"korean","a":"서울특별시 강남구 테헤란로1길 19","lat":37.499655,"lng":127.027494},{"i":"87319d7a","n":"전라도밥상","c":"korean","a":"서울특별시 구로구 디지털로26길 111","lat":37.482577,"lng":126.896748},{"i":"00c782f9","n":"정동1946 서울시청본점","c":"korean","a":"서울특별시 중구 서소문로11길 19","lat":37.563382,"lng":126.972807},{"i":"7b667f51","n":"정백선순대 상암점","c":"korean","a":"서울특별시 마포구 매봉산로2길 15","lat":37.578485,"lng":126.894949},{"i":"6e94ed18","n":"정백어가 광화문 피맛골본점","c":"korean","a":"서울특별시 종로구 종로 19","lat":37.570834,"lng":126.979861},{"i":"3d2e970e","n":"정희 판교아브뉴프랑점","c":"korean","a":"경기도 성남시 분당구 동판교로177번길 25","lat":37.397729,"lng":127.113558},{"i":"87b5f1ec","n":"종각역 미술관 고기집 인사동점","c":"korean","a":"서울특별시 종로구 우정국로2길 37","lat":37.569634,"lng":126.98521},{"i":"65570ba9","n":"진구곱창 강남역본점","c":"korean","a":"서울특별시 서초구 서초대로75길 37","lat":37.500743,"lng":127.024877},{"i":"f5a8939f","n":"진남관","c":"korean","a":"서울특별시 강남구 강남대로84길 28","lat":37.496978,"lng":127.03095},{"i":"885d70c2","n":"진성","c":"korean","a":"서울특별시 영등포구 여의대로 66","lat":37.524729,"lng":126.923689},{"i":"3708116a","n":"집밥맛있다","c":"korean","a":"경기도 성남시 분당구 대왕판교로 660","lat":37.401009,"lng":127.106372},{"i":"cccc0120","n":"청목","c":"korean","a":"서울특별시 강남구 테헤란로 124","lat":37.498714,"lng":127.0316},{"i":"f30f3666","n":"판교집 본점","c":"korean","a":"경기도 성남시 분당구 판교역로 178","lat":37.396441,"lng":127.110077},{"i":"c1691a98","n":"팔도밀방 강남본점","c":"korean","a":"서울특별시 강남구 강남대로94길 11","lat":37.499518,"lng":127.02829},{"i":"9f38bf77","n":"한솔식당","c":"korean","a":"서울특별시 종로구 청계천로 35","lat":37.56927,"lng":126.981328},{"i":"fe23fc46","n":"황가네칼국수","c":"korean","a":"서울특별시 마포구 매봉산로2길 45","lat":37.577309,"lng":126.895903},{"i":"a2a3bde0","n":"효담칼국수 닭한마리 명동본점","c":"korean","a":"서울특별시 중구 명동3길 12","lat":37.564244,"lng":126.983632},{"i":"f58d8c8e","n":"강남교자 본점","c":"noodle","a":"서울특별시 서초구 강남대로69길 11","lat":37.501486,"lng":127.024318},{"i":"775418af","n":"강남교자 분당서현점","c":"noodle","a":"경기도 성남시 분당구 서현로210번길 10","lat":37.386402,"lng":127.124826},{"i":"ff223e47","n":"고향 엄마손 생바지락 칼국수 구로디지털직영점","c":"noodle","a":"서울특별시 구로구 디지털로 306","lat":37.485992,"lng":126.897736},{"i":"e8b1dce0","n":"국수의진수","c":"noodle","a":"경기도 성남시 분당구 대왕판교로 660","lat":37.400476,"lng":127.106853},{"i":"6f32f367","n":"대련집","c":"noodle","a":"서울특별시 종로구 종로16길 37","lat":37.56839,"lng":126.988903},{"i":"a236bc93","n":"류창희국수 역삼본점","c":"noodle","a":"서울특별시 강남구 역삼로 216","lat":37.496445,"lng":127.040813},{"i":"6fde2b78","n":"명동칼국수","c":"noodle","a":"서울특별시 강남구 강남대로84길 32","lat":37.497058,"lng":127.031122},{"i":"8d01b8c1","n":"명동칼국수 푸드엠파이어 IFC몰점","c":"noodle","a":"서울특별시 영등포구 국제금융로 10","lat":37.525313,"lng":126.926031},{"i":"dcc06b5d","n":"명동칼국수샤브샤브 판교테크노벨리점","c":"noodle","a":"경기도 성남시 분당구 판교역로 231","lat":37.401289,"lng":127.108676},{"i":"00ff955c","n":"상암동멸치국수","c":"noodle","a":"서울특별시 마포구 월드컵북로44길 24","lat":37.576229,"lng":126.895963},{"i":"005c46d5","n":"소호정 동여의도점","c":"noodle","a":"서울특별시 영등포구 국제금융로 86","lat":37.51999,"lng":126.931685},{"i":"a4e7ab54","n":"소호정 여의도국회의사당점","c":"noodle","a":"서울특별시 영등포구 국회대로70길 15-1","lat":37.529815,"lng":126.920484},{"i":"167a08a0","n":"신라제면 안국점","c":"noodle","a":"서울특별시 종로구 계동길 19-6","lat":37.578222,"lng":126.986234},{"i":"e003232d","n":"아름멸치국수","c":"noodle","a":"경기도 성남시 분당구 판교로 444","lat":37.405059,"lng":127.123065},{"i":"8902554c","n":"오백국수 구로디지털점","c":"noodle","a":"서울특별시 구로구 디지털로32길 87","lat":37.483239,"lng":126.900084},{"i":"3006289d","n":"오시오칼국수","c":"noodle","a":"서울특별시 구로구 디지털로 243","lat":37.482001,"lng":126.892569},{"i":"d9d3e43d","n":"제일제면소 여의도IFC점","c":"noodle","a":"서울특별시 영등포구 국제금융로 10","lat":37.52531,"lng":126.925255},{"i":"577e8e7b","n":"종가만두","c":"noodle","a":"서울특별시 종로구 수표로 88","lat":37.568906,"lng":126.989679},{"i":"545578f1","n":"진주집","c":"noodle","a":"서울특별시 영등포구 국제금융로6길 33","lat":37.520692,"lng":126.926825},{"i":"c921abc4","n":"청년38국수 구로점","c":"noodle","a":"서울특별시 구로구 디지털로31길 53","lat":37.485489,"lng":126.892424},{"i":"2360ed8e","n":"청하칼국수","c":"noodle","a":"서울특별시 마포구 상암산로 76","lat":37.578965,"lng":126.892327},{"i":"ba4765dd","n":"탄백","c":"noodle","a":"서울특별시 중구 정동길 37","lat":37.565958,"lng":126.972468},{"i":"91000e87","n":"황생가칼국수","c":"noodle","a":"서울특별시 종로구 북촌로5길 78","lat":37.580132,"lng":126.98069},{"i":"5c97d93a","n":"Poke all day 포케&샐러드 구로점","c":"salad","a":"서울특별시 구로구 디지털로26길 5","lat":37.481892,"lng":126.893609},{"i":"12c10a20","n":"Poke all day 포케&샐러드 상암점","c":"salad","a":"서울특별시 마포구 월드컵북로 396","lat":37.579342,"lng":126.889819},{"i":"a5fafc19","n":"Poke all day 포케&샐러드 판교점","c":"salad","a":"경기도 성남시 분당구 분당내곡로 131","lat":37.395465,"lng":127.112114},{"i":"3e88f3e4","n":"SLB샐러드 상암점","c":"salad","a":"서울특별시 마포구 월드컵북로54길 17","lat":37.581611,"lng":126.888528},{"i":"47c6543a","n":"그리너 남대문점","c":"salad","a":"서울특별시 중구 남대문로 6","lat":37.560341,"lng":126.976408},{"i":"1682198c","n":"그린테이블 구디점","c":"salad","a":"서울특별시 구로구 디지털로34길 55","lat":37.484159,"lng":126.899458},{"i":"2654ba59","n":"그린하이 샐러드","c":"salad","a":"서울특별시 마포구 월드컵북로 396","lat":37.579342,"lng":126.889819},{"i":"55f12095","n":"밸런스포케 역삼점","c":"salad","a":"서울특별시 강남구 강남대로94길 75","lat":37.500703,"lng":127.033481},{"i":"7daeb4f0","n":"버터헤드 역삼점","c":"salad","a":"서울특별시 강남구 역삼로14길 3","lat":37.494325,"lng":127.035369},{"i":"6d3ef1bc","n":"보울레시피 상암점","c":"salad","a":"서울특별시 마포구 월드컵북로 402","lat":37.58021,"lng":126.888968},{"i":"18d1d88f","n":"샐러드카페 파라","c":"salad","a":"경기도 성남시 분당구 판교역로192번길 16","lat":37.397745,"lng":127.111446},{"i":"ac03e6a7","n":"샐리오 샐러드&포케 역삼점","c":"salad","a":"서울특별시 강남구 역삼로 166","lat":37.495003,"lng":127.037233},{"i":"9986aab7","n":"슬로우캘리 구로디지털단지점","c":"salad","a":"서울특별시 구로구 디지털로30길 31","lat":37.482895,"lng":126.89585},{"i":"82633280","n":"싱싱샐러드 구로점","c":"salad","a":"서울특별시 구로구 디지털로29길 38","lat":37.484414,"lng":126.892962},{"i":"44cd28eb","n":"아임샐러드","c":"salad","a":"서울특별시 영등포구 국회대로70길 18","lat":37.528895,"lng":126.920359},{"i":"0ab7e095","n":"알로하포케 IFC몰점","c":"salad","a":"서울특별시 영등포구 국제금융로 10","lat":37.524944,"lng":126.9263},{"i":"2e02a276","n":"언더랩 샐러드&포케","c":"salad","a":"서울특별시 종로구 새문안로3길 30","lat":37.572737,"lng":126.973371},{"i":"c8fe2aa8","n":"올라포케 강남점","c":"salad","a":"서울특별시 강남구 테헤란로4길 46","lat":37.495542,"lng":127.030404},{"i":"dbd8c423","n":"올라포케 광화문점","c":"salad","a":"서울특별시 종로구 새문안로5길 19","lat":37.572032,"lng":126.974311},{"i":"fdfb823b","n":"올라포케 동여의도점","c":"salad","a":"서울특별시 영등포구 의사당대로1길 25","lat":37.520067,"lng":126.929833},{"i":"4af71f60","n":"올라포케 상암DMC점","c":"salad","a":"서울특별시 마포구 월드컵북로 396","lat":37.579342,"lng":126.889819},{"i":"f060a76d","n":"올라포케 판교점","c":"salad","a":"경기도 성남시 분당구 대왕판교로 660","lat":37.401064,"lng":127.107363},{"i":"8ed9930e","n":"올레샐러드","c":"salad","a":"경기도 성남시 분당구 대왕판교로 660","lat":37.400476,"lng":127.106853},{"i":"503379b0","n":"크리스피프레시 여의도파크원점","c":"salad","a":"서울특별시 영등포구 여의대로 108","lat":37.526685,"lng":126.927098},{"i":"ba4c2829","n":"폴인포케 강남역점","c":"salad","a":"서울특별시 강남구 테헤란로1길 32","lat":37.500415,"lng":127.027472},{"i":"9f96604e","n":"폴인포케 서울시청점","c":"salad","a":"서울특별시 중구 남대문로1길 30","lat":37.562337,"lng":126.977528},{"i":"38f7aa1c","n":"하와이안보울","c":"salad","a":"서울특별시 영등포구 여의대로 24","lat":37.522193,"lng":126.919966},{"i":"d431f7ab","n":"훅트포케 구로디지털단지점","c":"salad","a":"서울특별시 구로구 디지털로29길 38","lat":37.484418,"lng":126.893309},{"i":"4fb070ea","n":"훅트포케 을지로점","c":"salad","a":"서울특별시 중구 삼일대로12길 18","lat":37.56664,"lng":126.988765},{"i":"663dd186","n":"훅트포케 판교점","c":"salad","a":"경기도 성남시 분당구 판교역로 145","lat":37.394321,"lng":127.108975},{"i":"0bec6c41","n":"20 어클락 모먼트","c":"western","a":"서울특별시 중구 창경궁로5길 5","lat":37.567076,"lng":126.997747},{"i":"dece2625","n":"고급양식 역삼점","c":"western","a":"서울특별시 강남구 역삼로17길 33","lat":37.497004,"lng":127.036475},{"i":"d39e2846","n":"까사논나","c":"western","a":"경기도 성남시 분당구 대왕판교로 660","lat":37.400476,"lng":127.106853},{"i":"a34c98cb","n":"달리181 상암점","c":"western","a":"서울특별시 마포구 월드컵북로54길 17","lat":37.581339,"lng":126.888563},{"i":"4d2d7a39","n":"더 시옷","c":"western","a":"서울특별시 중구 수표로 30","lat":37.563836,"lng":126.990306},{"i":"4ce6ade2","n":"더미뇽 서울","c":"western","a":"서울특별시 강남구 강남대로102길 25","lat":37.502719,"lng":127.02746},{"i":"f2f42cb8","n":"데일리픽스 을지로","c":"western","a":"서울특별시 중구 남대문로9길 24","lat":37.567095,"lng":126.981305},{"i":"0d72ae9f","n":"라디오베이 판교점","c":"western","a":"경기도 성남시 분당구 판교역로192번길 12","lat":37.397576,"lng":127.110853},{"i":"85d9e3bd","n":"라브리크 서울","c":"western","a":"서울특별시 강남구 봉은사로18길 66","lat":37.502425,"lng":127.02801},{"i":"fe8a220d","n":"라칸티나","c":"western","a":"서울특별시 중구 을지로 19","lat":37.56624,"lng":126.980035},{"i":"781c7e84","n":"매드포갈릭 상암MBC점","c":"western","a":"서울특별시 마포구 성암로 255","lat":37.579817,"lng":126.891619},{"i":"b73611c5","n":"미스테리 쉐프 린","c":"western","a":"서울특별시 영등포구 여의대방로67길 22","lat":37.520684,"lng":126.929981},{"i":"5bf9b3b9","n":"본보야지","c":"western","a":"서울특별시 영등포구 국제금융로2길 7","lat":37.524673,"lng":126.92678},{"i":"04db99cc","n":"브라주카그릴","c":"western","a":"서울특별시 중구 무교로 19","lat":37.56762,"lng":126.979084},{"i":"33d47a25","n":"비욘더 강남","c":"western","a":"서울특별시 강남구 역삼로7길 5","lat":37.494459,"lng":127.033012},{"i":"9ba88c4f","n":"살레르노 판교점","c":"western","a":"경기도 성남시 분당구 판교역로 145","lat":37.394322,"lng":127.108895},{"i":"fbb5488c","n":"시에나 프리모","c":"western","a":"서울특별시 영등포구 국회대로70길 19","lat":37.529116,"lng":126.920925},{"i":"21adf822","n":"시즈널리티","c":"western","a":"서울특별시 영등포구 국제금융로7길 22","lat":37.523256,"lng":126.933081},{"i":"8eaff31d","n":"심퍼티쿠시 광화문점","c":"western","a":"서울특별시 종로구 율곡로 6","lat":37.575556,"lng":126.980676},{"i":"e4585ec7","n":"심퍼티쿠시 여의도점","c":"western","a":"서울특별시 영등포구 의사당대로 96","lat":37.521521,"lng":126.922872},{"i":"5037c269","n":"쌤쌤쌤 광화문점","c":"western","a":"서울특별시 종로구 종로3길 17","lat":37.570632,"lng":126.978801},{"i":"3522a9e7","n":"알렉스루카","c":"western","a":"서울특별시 강남구 강남대로 338","lat":37.493467,"lng":127.03049},{"i":"39b35a71","n":"어거스트힐 강남점","c":"western","a":"서울특별시 강남구 강남대로106길 25","lat":37.503356,"lng":127.027642},{"i":"d3f4be3e","n":"우노네","c":"western","a":"서울특별시 마포구 월드컵북로48길 33-7","lat":37.5776,"lng":126.895154},{"i":"c9e1ec5e","n":"이탈리 판교점","c":"western","a":"경기도 성남시 분당구 판교역로146번길 20","lat":37.393186,"lng":127.112452},{"i":"eb607a5b","n":"익선취향","c":"western","a":"서울특별시 종로구 수표로28길 17-32","lat":37.573597,"lng":126.989593},{"i":"5ab8e224","n":"제비파스타&리조또 구로디지털단지점","c":"western","a":"서울특별시 구로구 시흥대로163길 12","lat":37.481679,"lng":126.899319},{"i":"03380fa3","n":"지금 여기가 맨 앞","c":"western","a":"서울특별시 중구 을지로20길 16","lat":37.565685,"lng":126.995261},{"i":"54acf150","n":"지아니스나폴리 역삼 본점","c":"western","a":"서울특별시 강남구 논현로94길 15","lat":37.502644,"lng":127.037536},{"i":"8dae77e6","n":"트라가 역삼점","c":"western","a":"서울특별시 강남구 테헤란로25길 46","lat":37.503496,"lng":127.034817},{"i":"ccb3f556","n":"파브란트 강남","c":"western","a":"서울특별시 강남구 테헤란로 129","lat":37.499933,"lng":127.032368},{"i":"c67e7388","n":"파스타공작소","c":"western","a":"서울특별시 마포구 월드컵북로42가길 24","lat":37.575381,"lng":126.897016},{"i":"f484f361","n":"파스타마켓 혜화 본점","c":"western","a":"서울특별시 종로구 대학로11길 9-5","lat":37.582079,"lng":127.001248},{"i":"6c79287c","n":"핀사로 상암","c":"western","a":"서울특별시 마포구 월드컵북로 396","lat":37.579342,"lng":126.889819},{"i":"bfc5a7c7","n":"필동함박 을지로점 오무야","c":"western","a":"서울특별시 중구 마른내로 50-1","lat":37.564198,"lng":126.993351},{"i":"751d05fb","n":"핏제리아 빠드레","c":"western","a":"서울특별시 종로구 새문안로5길 11-13","lat":37.571065,"lng":126.974138},{"i":"d63ce9be","n":"핏짜피자 구로점","c":"western","a":"서울특별시 구로구 디지털로31길 81","lat":37.486357,"lng":126.891273},{"i":"5ffbdef1","n":"핑거크로스","c":"western","a":"경기도 성남시 분당구 동판교로177번길 25","lat":37.397422,"lng":127.113561},{"i":"dad90597","n":"한옥달 레스토랑","c":"western","a":"서울특별시 종로구 자하문로1가길 9","lat":37.576981,"lng":126.971872},{"i":"6b9e58e6","n":"헤비스테이크 구로디지털단지점","c":"western","a":"서울특별시 구로구 디지털로26길 110","lat":37.482077,"lng":126.897679}];
+
+const LOCS = [
+  {id:"gangnam",  name:"강남역",        lat:37.4979, lng:127.0276},
+  {id:"yeoksam",  name:"역삼역",        lat:37.5006, lng:127.0365},
+  {id:"pangyo",   name:"판교역",        lat:37.3947, lng:127.1112},
+  {id:"yeouido",  name:"여의도역",      lat:37.5215, lng:126.9243},
+  {id:"gwanghwa", name:"광화문역",      lat:37.5715, lng:126.9769},
+  {id:"euljiro",  name:"을지로입구역",  lat:37.5660, lng:126.9826},
+  {id:"guro",     name:"구로디지털단지역", lat:37.4853, lng:126.9016},
+  {id:"sangam",   name:"상암 DMC",      lat:37.5793, lng:126.8898},
+];
+
+const CATS = {
+  korean:   {label:"한식",    em:"🍚", price:11000, tags:["든든","혼밥"]},
+  gukbap:   {label:"국밥·탕",  em:"🍲", price:11000, tags:["국물","든든","혼밥"]},
+  chinese:  {label:"중식",    em:"🥟", price:12000, tags:["든든","매콤"]},
+  japanese: {label:"일식",    em:"🍣", price:15000, tags:["가볍게","혼밥"]},
+  donkatsu: {label:"돈까스",  em:"🍱", price:13000, tags:["든든","혼밥"]},
+  western:  {label:"양식",    em:"🍝", price:16000, tags:["분위기","단체"]},
+  bunsik:   {label:"분식",    em:"🍢", price:9000,  tags:["가볍게","빠름","매콤","혼밥"]},
+  noodle:   {label:"면·칼국수",em:"🍜", price:10000, tags:["국물","가볍게","빠름"]},
+  asian:    {label:"아시안",  em:"🍛", price:12000, tags:["국물","가볍게"]},
+  salad:    {label:"샐러드",  em:"🥗", price:13000, tags:["가볍게","빠름"]},
+};
+
+const MOODS = [
+  {t:"국물",   label:"국물 땡김"},
+  {t:"가볍게", label:"가볍게"},
+  {t:"든든",   label:"든든하게"},
+  {t:"매콤",   label:"매콤하게"},
+  {t:"빠름",   label:"빨리 먹기"},
+  {t:"분위기", label:"분위기 있게"},
+];
+const PARTIES = [
+  {v:"solo",  label:"혼밥",    tag:"혼밥"},
+  {v:"few",   label:"2~3명",   tag:null},
+  {v:"group", label:"단체",    tag:"단체"},
+];
+
+/* 도보 속도 67m/분, 직선거리에 1.3배 우회 보정 */
+const WALK_MPM = 67, DETOUR = 1.3;
+
+/* ===================== 상태 ===================== */
+
+const KEY = "lunchPicker.v1";
+const today = () => new Date().toISOString().slice(0,10);
+
+const DEFAULTS = {
+  locId:"gangnam", custom:null, walk:15, budget:15000,
+  party:"few", moods:[], rainy:false,
+  excl:[], overrides:{}, mine:[], history:[],
+};
+
+let S = load();
+function load(){
+  try{
+    const raw = localStorage.getItem(KEY);
+    if(raw) return Object.assign({}, DEFAULTS, JSON.parse(raw));
+  }catch(e){ /* 사파리 비공개 모드 등 - 기본값으로 진행 */ }
+  return Object.assign({}, DEFAULTS);
+}
+function save(){
+  try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(e){}
+}
+
+/* ===================== 계산 ===================== */
+
+function haversine(aLat,aLng,bLat,bLng){
+  const R=6371000, rad=d=>d*Math.PI/180;
+  const dLat=rad(bLat-aLat), dLng=rad(bLng-aLng);
+  const h=Math.sin(dLat/2)**2 +
+          Math.cos(rad(aLat))*Math.cos(rad(bLat))*Math.sin(dLng/2)**2;
+  return 2*R*Math.asin(Math.sqrt(h));
+}
+
+function origin(){
+  if(S.locId==="__here__" && S.custom) return S.custom;
+  return LOCS.find(l=>l.id===S.locId) || LOCS[0];
+}
+function originName(){
+  if(S.locId==="__here__") return S.custom ? "현재 위치" : "현재 위치(미설정)";
+  return (LOCS.find(l=>l.id===S.locId)||LOCS[0]).name;
+}
+
+/** 시드 + 내가 추가한 곳을, 현재 위치 기준 도보시간을 붙여서 돌려준다. */
+function pool(){
+  const o = origin(), out = [];
+  for(const r of SEED){
+    const m = Math.max(1, Math.ceil(haversine(o.lat,o.lng,r.lat,r.lng)*DETOUR/WALK_MPM));
+    out.push({id:r.i, name:r.n, cat:r.c, addr:r.a, walk:m});
+  }
+  for(const r of S.mine){
+    if(r.loc !== S.locId) continue;
+    out.push({id:r.id, name:r.name, cat:r.cat, addr:"직접 추가", walk:r.walk, mine:true});
+  }
+  return out.map(decorate);
+}
+
+function decorate(r){
+  const ov = S.overrides[r.id] || {};
+  const meta = CATS[r.cat] || CATS.korean;
+  return Object.assign({}, r, {
+    price: ov.price != null ? ov.price : (r.price != null ? r.price : meta.price),
+    rating: ov.rating || 0,
+    hidden: !!ov.hidden,
+    tags: meta.tags,
+    em: meta.em,
+    catLabel: meta.label,
+  });
+}
+
+/** 마지막 방문일로부터 며칠 지났는지. 기록 없으면 null. */
+function daysSince(id){
+  const hit = S.history.find(h=>h.id===id);
+  if(!hit) return null;
+  const diff = (new Date(today()) - new Date(hit.date)) / 86400000;
+  return Math.round(diff);
+}
+function catDaysSince(cat){
+  const hit = S.history.find(h=>h.cat===cat);
+  if(!hit) return null;
+  return Math.round((new Date(today()) - new Date(hit.date)) / 86400000);
+}
+
+function score(r, penalize){
+  let s = 0;
+  for(const m of S.moods) if(r.tags.includes(m)) s += 30;
+  const partyTag = (PARTIES.find(p=>p.v===S.party)||{}).tag;
+  if(partyTag && r.tags.includes(partyTag)) s += 12;
+  if(S.rainy && r.tags.includes("국물")) s += 15;
+
+  const d = daysSince(r.id);
+  if(d !== null){
+    if(d <= 1) s -= 60;
+    else if(d <= 3) s -= 40;
+    else if(d <= 7) s -= 25;
+  }
+  const cd = catDaysSince(r.cat);
+  if(cd !== null && cd <= 3) s -= 20;
+
+  if(r.rating) s += (r.rating - 3) * 7;
+  s += (Math.random() * 20) - 10;          // 매번 같은 답이 나오지 않도록
+  if(penalize && penalize.has(r.id)) s -= 45;  // "다시 굴리기"로 밀려난 곳
+  return s;
+}
+
+/** 조건을 통과한 곳들 중 점수 상위 5곳. 같은 종류는 최대 2곳까지. */
+function choose(penalize){
+  const eligible = pool().filter(r =>
+    !r.hidden &&
+    r.walk <= S.walk &&
+    r.price <= S.budget &&
+    !S.excl.includes(r.cat)
+  );
+  const ranked = eligible
+    .map(r => ({r, s:score(r, penalize)}))
+    .sort((a,b) => b.s - a.s);
+
+  const out = [], perCat = {};
+  for(const {r} of ranked){
+    if(out.length >= 5) break;
+    if((perCat[r.cat]||0) >= 2) continue;
+    perCat[r.cat] = (perCat[r.cat]||0) + 1;
+    out.push(r);
+  }
+  // 종류 제한 때문에 5개를 못 채웠으면 남은 곳으로 보충
+  if(out.length < 5){
+    for(const {r} of ranked){
+      if(out.length >= 5) break;
+      if(!out.includes(r)) out.push(r);
+    }
+  }
+  return {picks:out, total:eligible.length};
+}
+
+/* ===================== 화면 ===================== */
+
+const $  = s => document.querySelector(s);
+const el = (t,p={}) => Object.assign(document.createElement(t), p);
+const won = n => n.toLocaleString("ko-KR") + "원";
+const mapUrl = r => "https://map.naver.com/p/search/" +
+  encodeURIComponent(r.name + " " + (r.addr === "직접 추가" ? "" : r.addr));
+
+let lastPicks = [], rerolled = new Set();
+
+const ui = {
+  tab(name){
+    for(const t of ["pick","list","log"]){
+      $("#view-"+t).hidden = (t !== name);
+      $("#tab-"+t).setAttribute("aria-selected", String(t === name));
+    }
+    if(name === "list") render.list();
+    if(name === "log")  render.log();
+  },
+  setLoc(v){
+    if(v === "__here__"){ return ui.useHere(); }
+    S.locId = v; save(); render.pool(); render.results([]);
+  },
+  useHere(){
+    const back = S.locId;
+    if(!navigator.geolocation){
+      $("#locNote").textContent = "이 브라우저는 현재 위치를 지원하지 않아요.";
+      $("#loc").value = back; return;
+    }
+    $("#locNote").textContent = "위치를 확인하는 중…";
+    navigator.geolocation.getCurrentPosition(
+      p => {
+        S.locId = "__here__";
+        S.custom = {lat:p.coords.latitude, lng:p.coords.longitude};
+        save(); render.pool(); render.results([]);
+      },
+      () => {
+        $("#loc").value = back;
+        $("#locNote").textContent =
+          "위치를 가져오지 못했어요. 권한을 허용했는지 확인하거나 역을 직접 골라주세요.";
+      },
+      {timeout:8000}
+    );
+  },
+  setWalk(v){ S.walk = +v; $("#walkV").textContent = v + "분"; save(); render.pool(); },
+  setBud(v){  S.budget = +v; $("#budV").textContent = won(+v); save(); render.pool(); },
+};
+
+const render = {
+  boot(){
+    const sel = $("#loc");
+    for(const l of LOCS) sel.append(el("option",{value:l.id, textContent:l.name}));
+    sel.append(el("option",{value:"__here__", textContent:"📍 현재 위치 쓰기"}));
+    sel.value = S.locId;
+
+    const nc = $("#nc");
+    for(const [k,v] of Object.entries(CATS))
+      nc.append(el("option",{value:k, textContent:v.label}));
+
+    $("#walk").value = S.walk; $("#walkV").textContent = S.walk + "분";
+    $("#bud").value = S.budget; $("#budV").textContent = won(S.budget);
+
+    render.chips("#party", PARTIES.map(p=>({key:p.v, label:p.label})),
+      k => S.party === k,
+      k => { S.party = k; save(); render.boot(); render.pool(); });
+
+    render.chips("#mood", MOODS.map(m=>({key:m.t, label:m.label})),
+      k => S.moods.includes(k),
+      k => { S.moods = S.moods.includes(k) ? S.moods.filter(x=>x!==k) : S.moods.concat(k);
+             save(); render.boot(); });
+
+    render.chips("#weather", [{key:"rainy", label:"🌧️ 비 와요"}],
+      () => S.rainy,
+      () => { S.rainy = !S.rainy; save(); render.boot(); });
+
+    render.chips("#excl", Object.entries(CATS).map(([k,v])=>({key:k, label:v.em+" "+v.label})),
+      k => S.excl.includes(k),
+      k => { S.excl = S.excl.includes(k) ? S.excl.filter(x=>x!==k) : S.excl.concat(k);
+             save(); render.boot(); render.pool(); render.list(); });
+
+    render.pool();
+  },
+
+  chips(sel, items, isOn, toggle){
+    const box = $(sel); box.textContent = "";
+    for(const it of items){
+      const b = el("button",{className:"chip", textContent:it.label});
+      b.setAttribute("aria-pressed", String(!!isOn(it.key)));
+      b.onclick = () => toggle(it.key);
+      box.append(b);
+    }
+  },
+
+  pool(){
+    const near = pool().filter(r => !r.hidden && r.walk <= S.walk && !S.excl.includes(r.cat));
+    const fit  = near.filter(r => r.price <= S.budget);
+    $("#poolInfo").textContent = originName() + " · 후보 " + fit.length + "곳";
+    $("#addLoc").textContent = originName();
+    const note = $("#locNote");
+    if(S.locId === "__here__" && !S.custom){
+      note.textContent = "현재 위치가 아직 설정되지 않았어요.";
+    } else if(fit.length === 0){
+      note.textContent = "조건에 맞는 곳이 없어요. 도보 시간이나 예산을 늘려보세요.";
+    } else if(fit.length < 5){
+      note.textContent = "후보가 " + fit.length + "곳뿐이에요. 도보 시간을 늘리면 선택지가 넓어집니다.";
+    } else {
+      note.textContent = "도보 " + S.walk + "분 안에 " + near.length +
+                         "곳, 그중 예산에 맞는 곳이 " + fit.length + "곳입니다.";
+    }
+  },
+
+  results(picks){
+    const box = $("#results"); box.textContent = "";
+    if(!picks.length) return;
+
+    const head = el("div",{className:"row", style:"margin-bottom:10px"});
+    head.append(el("div",{style:"font-weight:700;font-size:15px", textContent:"오늘의 후보"}));
+    box.append(head);
+
+    for(const r of picks) box.append(render.pickCard(r));
+
+    const acts = el("div",{className:"row", style:"margin-top:14px"});
+    const b1 = el("button",{className:"btn sm", textContent:"🎯 룰렛으로 하나만"});
+    b1.onclick = () => roulette(picks);
+    const b2 = el("button",{className:"btn sm ghost", textContent:"⚔️ 1:1 대결"});
+    b2.onclick = () => duel(picks);
+    const b3 = el("button",{className:"btn sm ghost", textContent:"🔄 다시 굴리기"});
+    b3.onclick = () => app.recommend(true);
+    acts.append(b1,b2,b3);
+    box.append(acts);
+    box.append(el("p",{className:"note",
+      textContent:"고민되면 룰렛, 고르는 재미를 원하면 1:1 대결. 결정하면 기록에 남아 한동안 다시 안 나옵니다."}));
+  },
+
+  pickCard(r){
+    const c = el("div",{className:"pick"}); c.dataset.id = r.id;
+    c.append(el("div",{className:"em", textContent:r.em}));
+    const b = el("div",{className:"body"});
+    b.append(el("div",{className:"nm", textContent:r.name}));
+    const d = daysSince(r.id);
+    let meta = r.catLabel + " · 도보 " + r.walk + "분 · " + won(r.price) + " 안팎";
+    if(d !== null && d <= 14) meta += " · " + (d === 0 ? "오늘 먹음" : d + "일 전에 감");
+    b.append(el("div",{className:"meta", textContent:meta}));
+    const tg = el("div",{className:"tg"});
+    for(const t of r.tags) tg.append(el("span",{textContent:t}));
+    b.append(tg);
+    c.append(b);
+    const a = el("a",{className:"map", href:mapUrl(r), target:"_blank",
+                      rel:"noopener", textContent:"지도 ↗"});
+    c.append(a);
+    return c;
+  },
+
+  list(){
+    const box = $("#listBody"); box.textContent = "";
+    const near = pool().filter(r => r.walk <= S.walk).sort((a,b)=>a.walk-b.walk);
+    $("#listCount").textContent = near.length + "곳";
+    if(!near.length){
+      box.append(el("p",{className:"empty",
+        textContent:"도보 " + S.walk + "분 안에 등록된 곳이 없어요. 위쪽에서 직접 추가해보세요."}));
+      return;
+    }
+    for(const r of near){
+      const it = el("div",{className:"item" + (r.hidden ? " off" : "")});
+      it.append(el("div",{style:"font-size:20px;flex:none", textContent:r.em}));
+      const b = el("div",{className:"body"});
+      b.append(el("div",{className:"nm", textContent:r.name}));
+      b.append(el("div",{className:"meta",
+        textContent:r.catLabel + " · 도보 " + r.walk + "분 · " + won(r.price) +
+                    (r.rating ? " · ★".repeat(1) + r.rating : "")}));
+      it.append(b);
+      const edit = el("button",{className:"mini", textContent:"수정"});
+      edit.onclick = () => editRestaurant(r);
+      it.append(edit);
+      box.append(it);
+    }
+  },
+
+  log(){
+    const st = $("#stats"); st.textContent = "";
+    const mon = today().slice(0,7);
+    const mine = S.history.filter(h => h.date.startsWith(mon));
+    if(!mine.length){
+      st.append(el("p",{className:"empty", textContent:"이번 달 기록이 아직 없어요."}));
+    } else {
+      const cnt = {};
+      for(const h of mine) cnt[h.cat] = (cnt[h.cat]||0) + 1;
+      const max = Math.max(...Object.values(cnt));
+      for(const [k,v] of Object.entries(cnt).sort((a,b)=>b[1]-a[1])){
+        const meta = CATS[k] || CATS.korean;
+        const bar = el("div",{className:"bar"});
+        bar.append(el("div",{className:"lb", textContent:meta.em + " " + meta.label}));
+        const tr = el("div",{className:"tr"});
+        tr.append(el("div",{className:"fl", style:"width:" + (v/max*100) + "%"}));
+        bar.append(tr);
+        bar.append(el("div",{className:"ct", textContent:v + "회"}));
+        st.append(bar);
+      }
+      st.append(el("p",{className:"note",
+        textContent:"이번 달 " + mine.length + "번 기록했어요."}));
+    }
+
+    const lb = $("#logBody"); lb.textContent = "";
+    if(!S.history.length){
+      lb.append(el("p",{className:"empty", textContent:"아직 기록이 없습니다."}));
+      return;
+    }
+    for(const h of S.history.slice(0,30)){
+      const meta = CATS[h.cat] || CATS.korean;
+      const it = el("div",{className:"item"});
+      it.append(el("div",{style:"font-size:18px;flex:none", textContent:meta.em}));
+      const b = el("div",{className:"body"});
+      b.append(el("div",{className:"nm", textContent:h.name}));
+      b.append(el("div",{className:"meta", textContent:h.date + " · " + meta.label}));
+      it.append(b);
+      const del = el("button",{className:"mini", textContent:"삭제"});
+      del.onclick = () => {
+        S.history = S.history.filter(x => !(x.id===h.id && x.date===h.date));
+        save(); render.log();
+      };
+      it.append(del);
+      lb.append(it);
+    }
+  },
+};
+
+/* ===================== 모달 ===================== */
+
+function modal(build){
+  const root = $("#modalRoot"); root.textContent = "";
+  const mask = el("div",{className:"mask"});
+  const box  = el("div",{className:"modal"});
+  mask.onclick = e => { if(e.target === mask) close(); };
+  function close(){ root.textContent = ""; }
+  mask.append(box); root.append(mask);
+  build(box, close);
+  return close;
+}
+
+/** 룰렛: 카드를 빠르게 훑다가 서서히 느려지며 한 곳에 멈춘다. */
+function roulette(picks){
+  const target = Math.floor(Math.random() * picks.length);
+  const cards  = picks.map(r => document.querySelector('.pick[data-id="' + r.id + '"]'));
+  let i = 0, step = 0;
+  const total = picks.length * 3 + target + 1;   // 3바퀴 돌고 목표에서 정지
+
+  (function tick(){
+    cards.forEach(c => c && c.classList.remove("lit"));
+    const cur = cards[i % picks.length];
+    if(cur) cur.classList.add("lit");
+    step++;
+    if(step >= total){
+      cards.forEach(c => c && c.classList.remove("lit"));
+      const w = cards[target]; if(w) w.classList.add("won");
+      setTimeout(() => announce(picks[target], picks), 380);
+      return;
+    }
+    i++;
+    setTimeout(tick, 60 + Math.pow(step / total, 3) * 260);
+  })();
+}
+
+/** 1:1 대결: 이긴 곳이 다음 상대를 만나는 서바이벌. 5곳이면 4판. */
+function duel(picks){
+  const queue = picks.slice();
+  let champ = queue.shift(), round = 1;
+  const rounds = picks.length - 1;
+
+  function next(){
+    if(!queue.length){ announce(champ, picks); return; }
+    const rival = queue.shift();
+    modal((box, close) => {
+      box.append(el("h3",{textContent:round + "라운드 / " + rounds}));
+      box.append(el("p",{className:"lead", textContent:"둘 중에 더 끌리는 쪽은?"}));
+      const mk = r => {
+        const b = el("button",{className:"duel"});
+        b.append(el("div",{className:"nm", textContent:r.em + " " + r.name}));
+        b.append(el("div",{className:"meta",
+          textContent:r.catLabel + " · 도보 " + r.walk + "분 · " + won(r.price)}));
+        b.onclick = () => { champ = r; round++; close(); next(); };
+        return b;
+      };
+      box.append(mk(champ));
+      box.append(el("div",{className:"vs", textContent:"VS"}));
+      box.append(mk(rival));
+    });
+  }
+  next();
+}
+
+/** 최종 결과 + 기록 저장 */
+function announce(r, picks){
+  modal((box, close) => {
+    const w = el("div",{className:"winner"});
+    w.append(el("div",{className:"em", textContent:r.em}));
+    w.append(el("div",{className:"nm", textContent:r.name}));
+    w.append(el("div",{className:"meta",
+      textContent:r.catLabel + " · 도보 " + r.walk + "분 · " + won(r.price) + " 안팎"}));
+    if(r.addr !== "직접 추가")
+      w.append(el("div",{className:"meta", style:"margin-top:2px", textContent:r.addr}));
+    box.append(w);
+
+    const go = el("a",{className:"btn", href:mapUrl(r), target:"_blank", rel:"noopener",
+                       textContent:"지도에서 열기", style:"display:block;text-align:center;text-decoration:none;margin-top:14px"});
+    box.append(go);
+
+    const ok = el("button",{className:"btn", style:"margin-top:8px",
+                            textContent:"여기로 결정! (기록 남기기)"});
+    ok.onclick = () => {
+      S.history = S.history.filter(h => !(h.id === r.id && h.date === today()));
+      S.history.unshift({id:r.id, name:r.name, cat:r.cat, date:today()});
+      S.history = S.history.slice(0, 200);
+      save(); close();
+      render.results(lastPicks);
+      $("#poolInfo").textContent = originName() + " · 기록 완료 ✓";
+      setTimeout(render.pool, 1800);
+    };
+    box.append(ok);
+
+    const again = el("button",{className:"btn ghost", style:"margin-top:8px",
+                               textContent:"다시 뽑을래요"});
+    again.onclick = () => { close(); app.recommend(true); };
+    box.append(again);
+  });
+}
+
+/** 가격·평점·숨김 수정 */
+function editRestaurant(r){
+  modal((box, close) => {
+    box.append(el("h3",{textContent:r.name}));
+    box.append(el("p",{className:"lead", textContent:r.catLabel + " · 도보 " + r.walk + "분"}));
+
+    box.append(el("label",{className:"f", textContent:"1인 가격"}));
+    const price = el("input",{type:"number", value:r.price, min:1000, step:500});
+    box.append(price);
+
+    box.append(el("label",{className:"f", style:"margin-top:14px", textContent:"내 평점"}));
+    const stars = el("div",{className:"chips"});
+    let picked = r.rating;
+    for(let n=1; n<=5; n++){
+      const b = el("button",{className:"chip", textContent:"★".repeat(n)});
+      b.dataset.n = n;
+      b.setAttribute("aria-pressed", String(picked === n));
+      b.onclick = () => {
+        picked = (picked === n) ? 0 : n;
+        for(const c of stars.children)
+          c.setAttribute("aria-pressed", String(picked === +c.dataset.n));
+      };
+      stars.append(b);
+    }
+    box.append(stars);
+
+    const hideRow = el("div",{className:"chips", style:"margin-top:14px"});
+    const hb = el("button",{className:"chip",
+      textContent: r.hidden ? "추천에서 제외됨 (누르면 해제)" : "추천에서 빼기"});
+    let hidden = r.hidden;
+    hb.setAttribute("aria-pressed", String(hidden));
+    hb.onclick = () => {
+      hidden = !hidden;
+      hb.setAttribute("aria-pressed", String(hidden));
+      hb.textContent = hidden ? "추천에서 제외됨 (누르면 해제)" : "추천에서 빼기";
+    };
+    hideRow.append(hb);
+    box.append(hideRow);
+
+    const ok = el("button",{className:"btn", style:"margin-top:18px", textContent:"저장"});
+    ok.onclick = () => {
+      S.overrides[r.id] = {price:+price.value || r.price, rating:picked, hidden:hidden};
+      save(); close(); render.list(); render.pool();
+    };
+    box.append(ok);
+
+    if(r.mine){
+      const del = el("button",{className:"btn ghost", style:"margin-top:8px",
+                               textContent:"이 식당 삭제"});
+      del.onclick = () => {
+        S.mine = S.mine.filter(x => x.id !== r.id);
+        delete S.overrides[r.id];
+        save(); close(); render.list(); render.pool();
+      };
+      box.append(del);
+    }
+  });
+}
+
+/* ===================== 액션 ===================== */
+
+const app = {
+  recommend(isReroll){
+    if(isReroll) for(const r of lastPicks) rerolled.add(r.id);
+    else rerolled = new Set();
+
+    const {picks, total} = choose(isReroll ? rerolled : null);
+    lastPicks = picks;
+
+    if(!picks.length){
+      $("#results").textContent = "";
+      $("#results").append(el("p",{className:"empty",
+        textContent:"조건에 맞는 곳이 하나도 없어요. 도보 시간이나 예산을 늘리거나, 제외한 종류를 확인해보세요."}));
+      return;
+    }
+    render.results(picks);
+    if(total > picks.length && picks.length < 5){
+      $("#results").append(el("p",{className:"note",
+        textContent:"조건에 맞는 곳이 " + total + "곳이라 " + picks.length + "곳만 뽑았어요."}));
+    }
+    $("#results").scrollIntoView({behavior:"smooth", block:"nearest"});
+  },
+
+  addCustom(){
+    const name = $("#nn").value.trim();
+    const msg  = $("#addMsg");
+    if(!name){ msg.textContent = "가게 이름을 입력해주세요."; return; }
+    const walk = Math.max(1, +$("#nw").value || 5);
+    const cat  = $("#nc").value;
+    const price = +$("#np").value || CATS[cat].price;
+    S.mine.unshift({
+      id:"my-" + Date.now().toString(36),
+      name, cat, walk, price, loc:S.locId,
+    });
+    save();
+    $("#nn").value = ""; $("#np").value = "";
+    msg.textContent = name + " 추가됨 ✓";
+    setTimeout(() => msg.textContent = "", 2500);
+    render.list(); render.pool();
+  },
+
+  payload(){
+    return JSON.stringify({app:"lunch-picker", v:1, saved:today(), state:S}, null, 2);
+  },
+  exportData(){
+    const blob = new Blob([app.payload()], {type:"application/json"});
+    const a = el("a",{href:URL.createObjectURL(blob),
+                      download:"lunch-picker-" + today() + ".json"});
+    document.body.append(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  },
+  async copyData(){
+    const msg = $("#backupMsg");
+    try{
+      await navigator.clipboard.writeText(app.payload());
+      msg.textContent = "설정을 클립보드에 복사했어요. 메모장에 붙여넣어 보관하세요.";
+    }catch(e){
+      msg.textContent = "복사에 실패했어요. 'JSON 내려받기'를 써주세요.";
+    }
+  },
+  importData(input){
+    const file = input.files && input.files[0];
+    if(!file) return;
+    const fr = new FileReader();
+    fr.onload = () => {
+      try{
+        const data = JSON.parse(fr.result);
+        if(!data || !data.state) throw new Error("형식이 다릅니다");
+        S = Object.assign({}, DEFAULTS, data.state);
+        save(); render.boot(); render.list(); render.log(); render.results([]);
+        $("#backupMsg").textContent = "불러왔습니다 ✓";
+      }catch(e){
+        $("#backupMsg").textContent = "이 파일은 읽을 수 없어요: " + e.message;
+      }
+      input.value = "";
+    };
+    fr.readAsText(file);
+  },
+};
+
+render.boot();
+</script>
+</body>
+</html>

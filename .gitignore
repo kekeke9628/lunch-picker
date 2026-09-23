@@ -1,0 +1,6 @@
+# normalize-seed.py 의 중간 산출물 (index.html 에 인라인되므로 커밋하지 않는다)
+restaurants.json
+
+node_modules/
+.DS_Store
+*.log
