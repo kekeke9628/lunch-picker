@@ -1,6 +1,10 @@
 # -*- coding: utf-8 -*-
 """Naver local-search rows -> lunch-picker seed JSON."""
-import json, hashlib
+import json, hashlib, importlib.util
+
+_spec = importlib.util.spec_from_file_location("price_model", "price-model.py")
+price_model = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(price_model)
 
 SRC = "seed-raw.tsv"
 OUT = "restaurants.json"
@@ -28,6 +32,13 @@ def classify(naver_cat):
     return "korean"
 
 
+FALLBACK = {
+    "korean": 10000, "gukbap": 10000, "chinese": 10000, "japanese": 14000,
+    "donkatsu": 12000, "western": 16000, "bunsik": 8000, "noodle": 10000,
+    "asian": 11000, "salad": 12000,
+}
+
+
 def short_id(name, addr):
     return hashlib.sha1((name + "|" + addr).encode("utf-8")).hexdigest()[:8]
 
@@ -47,13 +58,17 @@ with open(SRC, encoding="utf-8") as fh:
             dropped += 1
             continue
         seen.add(key)
+        app_cat = classify(cat)
+        lat, lng = round(int(mapy) / 1e7, 6), round(int(mapx) / 1e7, 6)
+        price, _ = price_model.estimate(name, cat, lat, lng, FALLBACK[app_cat])
         rows.append({
             "i": short_id(name, addr),
             "n": name,
-            "c": classify(cat),
+            "c": app_cat,
             "a": addr,
-            "lat": round(int(mapy) / 1e7, 6),
-            "lng": round(int(mapx) / 1e7, 6),
+            "lat": lat,
+            "lng": lng,
+            "p": price,
         })
 
 ids = {r["i"] for r in rows}
@@ -63,9 +78,14 @@ rows.sort(key=lambda r: (r["c"], r["n"]))
 with open(OUT, "w", encoding="utf-8") as fh:
     json.dump(rows, fh, ensure_ascii=False, separators=(",", ":"))
 
-counts = {}
+counts, prices = {}, {}
 for r in rows:
     counts[r["c"]] = counts.get(r["c"], 0) + 1
+    prices.setdefault(r["c"], []).append(r["p"])
 print("kept %d, dropped %d" % (len(rows), dropped))
+print("%-10s %5s %9s %9s %9s" % ("종류", "곳", "최저", "중앙", "최고"))
 for k in sorted(counts, key=lambda x: -counts[x]):
-    print("  %-10s %d" % (k, counts[k]))
+    ps = sorted(prices[k])
+    print("%-10s %5d %9s %9s %9s" % (
+        k, counts[k], format(ps[0], ","),
+        format(ps[len(ps) // 2], ","), format(ps[-1], ",")))
