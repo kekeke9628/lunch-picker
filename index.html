@@ -221,6 +221,33 @@ input[type=range]{width:100%;height:28px;margin:0;accent-color:var(--accent);cur
 }
 .sheet .x:hover{background:var(--surface-2);color:var(--text)}
 .stack>*+*{margin-top:8px}
+.sheet.wide{max-width:600px}
+
+/* 위치 줄 + 지도 고르기 */
+.loc-line{display:flex;align-items:center;gap:10px;margin-top:14px;padding:10px 12px;
+  border-radius:var(--r-ctl);background:var(--surface-2);font-size:13.5px}
+.loc-line .addr{flex:1;min-width:0;overflow-wrap:anywhere;line-height:1.45}
+.loc-line .addr small{display:block;color:var(--muted);font-size:12px}
+.loc-line .btns{display:flex;gap:6px;flex:none}
+.loc-line.bare{background:none;padding:0}
+@media (max-width:480px){
+  .loc-line:not(.bare){flex-wrap:wrap}
+  .loc-line:not(.bare) .btns{width:100%}
+  .loc-line:not(.bare) .btns .mini{flex:1}
+}
+.note .inline{color:var(--accent-ink);font-weight:700;text-decoration:underline;margin-left:4px}
+#pickMap{height:min(56dvh,420px);border-radius:var(--r-ctl);overflow:hidden;
+  border:1px solid var(--line);background:var(--surface-2)}
+.map-info{min-height:44px;margin:12px 0 14px;font-size:14px;line-height:1.5}
+.map-info b{display:block;font-size:15px}
+.map-info span{color:var(--muted);font-size:12.5px}
+.pin{width:22px;height:22px;border-radius:50% 50% 50% 0;background:var(--accent);
+  transform:rotate(-45deg);border:3px solid #fff;box-shadow:0 2px 6px rgb(0 0 0 / .35)}
+.leaflet-container{font:inherit}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]) .leaflet-tile-pane{filter:invert(1) hue-rotate(180deg) brightness(.9) contrast(.9)}
+}
+:root[data-theme="dark"] .leaflet-tile-pane{filter:invert(1) hue-rotate(180deg) brightness(.9) contrast(.9)}
 
 .progress{display:flex;gap:4px;margin:0 0 16px}
 .progress i{flex:1;height:4px;border-radius:999px;background:var(--line)}
@@ -326,6 +353,7 @@ input[type=range]{width:100%;height:28px;margin:0;accent-color:var(--accent);cur
           <div class="range-ends" aria-hidden="true"><span>3분</span><span>25분</span></div>
         </div>
       </div>
+      <div id="locAddr" aria-live="polite"></div>
       <p class="note" id="locNote" aria-live="polite"></p>
     </div>
 
@@ -499,7 +527,7 @@ const today = () => {
 };
 
 const DEFAULTS = {
-  locId:"gangnam", custom:null, walk:15, budget:15000,
+  locId:"gangnam", custom:null, mapPick:null, walk:15, budget:15000,
   party:"few", moods:[], rainy:false,
   excl:[], overrides:{}, mine:[], history:[],
 };
@@ -530,10 +558,12 @@ function haversine(aLat,aLng,bLat,bLng){
 
 function origin(){
   if(S.locId==="__here__" && S.custom) return S.custom;
+  if(S.locId==="__map__" && S.mapPick) return S.mapPick;
   return LOCS.find(l=>l.id===S.locId) || LOCS[0];
 }
 function originName(){
   if(S.locId==="__here__") return S.custom ? "현재 위치" : "현재 위치(미설정)";
+  if(S.locId==="__map__")  return "지도에서 고른 곳";
   return (LOCS.find(l=>l.id===S.locId)||LOCS[0]).name;
 }
 
@@ -656,7 +686,11 @@ const ui = {
   },
   setLoc(v){
     if(v === "__here__"){ return ui.useHere(); }
-    S.locId = v; save(); render.pool(); render.results([]);
+    if(v === "__map__"){ $("#loc").value = S.locId; return mapPicker(); }
+    ui.applyLoc(v);
+  },
+  applyLoc(v){
+    S.locId = v; save(); render.controls(); render.results([]); lastPicks = [];
   },
   useHere(){
     const back = S.locId;
@@ -667,9 +701,14 @@ const ui = {
     $("#locNote").textContent = "위치를 확인하는 중이에요…";
     navigator.geolocation.getCurrentPosition(
       p => {
-        S.locId = "__here__";
-        S.custom = {lat:p.coords.latitude, lng:p.coords.longitude};
-        save(); render.pool(); render.results([]);
+        const here = {lat:p.coords.latitude, lng:p.coords.longitude, addr:null};
+        S.custom = here;
+        ui.applyLoc("__here__");
+        geo.reverse(here.lat, here.lng).then(addr => {
+          if(S.custom !== here) return;        // 그새 위치를 또 바꿨으면 무시
+          here.addr = addr || "";
+          save(); render.locAddr();
+        });
       },
       () => {
         $("#loc").value = back;
@@ -732,6 +771,7 @@ const render = {
     const sel = $("#loc");
     for(const l of LOCS) sel.append(el("option",{value:l.id, textContent:l.name}));
     sel.append(el("option",{value:"__here__", textContent:"📍 지금 있는 곳"}));
+    sel.append(el("option",{value:"__map__", id:"optMap", textContent:"🗺️ 지도에서 고르기"}));
 
     const nc = $("#nc");
     for(const [k,v] of Object.entries(CATS))
@@ -744,7 +784,9 @@ const render = {
 
   /* 상태가 바뀔 때마다 다시 그리는 입력들 */
   controls(){
+    $("#optMap").textContent = S.mapPick ? "🗺️ 지도에서 고른 곳" : "🗺️ 지도에서 고르기";
     $("#loc").value = S.locId;
+    render.locAddr();
     $("#walk").value = S.walk; $("#walkV").textContent = S.walk + "분 이내";
     $("#bud").value = S.budget; $("#budV").textContent = budgetLabel(S.budget);
 
@@ -797,7 +839,18 @@ const render = {
       note.textContent = "현재 위치가 아직 설정되지 않았어요.";
     } else if(fit.length === 0){
       note.classList.add("warn");
-      note.textContent = "조건에 맞는 곳이 없어요. 도보 시간이나 예산을 늘려보세요.";
+      const o = origin(), far = LOCS
+        .map(l => ({l, d:haversine(o.lat,o.lng,l.lat,l.lng)}))
+        .sort((a,b) => a.d - b.d)[0];
+      if(near.length === 0 && far.d > 2500){
+        note.textContent = "이 근처엔 등록된 식당이 없어요. 식당 데이터는 8개 업무권역(역 주변)에만 있어요. " +
+          "가장 가까운 곳은 " + far.l.name + "(약 " + (far.d/1000).toFixed(1) + "km)이에요.";
+        const b = el("button",{className:"inline", type:"button", textContent:far.l.name + " 기준으로 바꾸기"});
+        b.onclick = () => ui.applyLoc(far.l.id);
+        note.append(b);
+      } else {
+        note.textContent = "조건에 맞는 곳이 없어요. 도보 시간이나 예산을 늘려보세요.";
+      }
     } else if(fit.length < 5){
       note.classList.add("warn");
       note.textContent = "후보가 " + fit.length + "곳뿐이에요. 도보 시간을 늘리면 선택지가 넓어져요.";
@@ -806,6 +859,45 @@ const render = {
                          "곳, 그중 예산에 맞는 곳은 " + fit.length + "곳이에요.";
     }
     render.markStale();
+  },
+
+  /* 위치 선택 아래 줄: 현재 위치·지도 위치면 주소, 역이면 지도 고르기 버튼 */
+  locAddr(){
+    const box = $("#locAddr"); box.textContent = "";
+    const mapBtn = label => {
+      const b = el("button",{className:"mini", type:"button", textContent:label});
+      b.onclick = () => mapPicker();
+      return b;
+    };
+    const line = el("div",{className:"loc-line"});
+    const txt = el("div",{className:"addr"});
+    const btns = el("div",{className:"btns"});
+    const cur = S.locId === "__here__" ? S.custom : S.locId === "__map__" ? S.mapPick : null;
+
+    if(!cur){
+      line.classList.add("bare");
+      txt.append(el("small",{textContent:"역이 아니라 정확한 회사 자리를 쓰고 싶다면"}));
+      btns.append(mapBtn("🗺️ 지도에서 고르기"));
+    } else {
+      if(cur.addr === undefined){            // 주소 기능 이전에 저장된 위치
+        cur.addr = null;
+        geo.reverse(cur.lat, cur.lng).then(a => { cur.addr = a || ""; save(); render.locAddr(); });
+      }
+      const head = S.locId === "__here__" ? "📍 지금 있는 곳" : "🗺️ 지도에서 고른 곳";
+      txt.append(el("small",{textContent:head}));
+      txt.append(cur.addr == null ? "주소를 확인하는 중이에요…"
+        : cur.addr ? cur.addr + " 근처"
+        : "주소를 불러오지 못했어요 (" + cur.lat.toFixed(5) + ", " + cur.lng.toFixed(5) + ")");
+      if(S.locId === "__here__"){
+        const again = el("button",{className:"mini", type:"button", textContent:"다시 잡기"});
+        again.onclick = () => ui.useHere();
+        btns.append(again, mapBtn("지도에서 조정"));
+      } else {
+        btns.append(mapBtn("다시 고르기"));
+      }
+    }
+    line.append(txt, btns);
+    box.append(line);
   },
 
   /* 결과를 보여준 뒤 조건이 바뀌면 알려준다 */
@@ -1195,6 +1287,159 @@ function editRestaurant(r){
       acts.append(del);
     }
     box.append(acts);
+  });
+}
+
+/* ===================== 주소 · 지도 ===================== */
+
+/* 좌표 → 한국어 주소. OpenStreetMap Nominatim (키 없음, 초당 1회 제한이라 캐시하고 디바운스한다) */
+const geo = {
+  cache: new Map(),
+  fmt(a){
+    if(!a) return "";
+    const area = a.province || a.city || a.state || "";
+    const gu   = a.borough || a.city_district || a.county || (a.province ? a.city : "") || "";
+    const road = a.road ? a.road + (a.house_number ? " " + a.house_number : "")
+               : (a.quarter || a.suburb || a.neighbourhood || a.village || a.town || "");
+    return [area, gu, road].filter((v,i,arr) => v && arr.indexOf(v) === i).join(" ");
+  },
+  async reverse(lat, lng){
+    const key = lat.toFixed(5) + "," + lng.toFixed(5);
+    if(geo.cache.has(key)) return geo.cache.get(key);
+    const ctl = new AbortController(), t = setTimeout(() => ctl.abort(), 7000);
+    try{
+      const res = await fetch("https://nominatim.openstreetmap.org/reverse?format=jsonv2&zoom=18" +
+        "&accept-language=ko&lat=" + lat + "&lon=" + lng, {signal:ctl.signal});
+      if(!res.ok) throw new Error(res.status);
+      const j = await res.json();
+      const addr = geo.fmt(j.address) + (j.name && j.name !== (j.address||{}).road ? " (" + j.name + ")" : "");
+      geo.cache.set(key, addr);
+      return addr;
+    }catch(e){ return null; }
+    finally{ clearTimeout(t); }
+  },
+};
+
+/* Leaflet 은 지도를 처음 열 때만 불러온다 */
+let leafletP = null;
+function loadLeaflet(){
+  if(window.L) return Promise.resolve(window.L);
+  if(leafletP) return leafletP;
+  const base = "https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/";
+  const css = el("link",{rel:"stylesheet", href:base + "leaflet.css", crossOrigin:"anonymous",
+    integrity:"sha384-sHL9NAb7lN7rfvG5lfHpm643Xkcjzp4jFvuavGOndn6pjVqS6ny56CAt3nsEVT4H"});
+  document.head.append(css);
+  leafletP = new Promise((ok, fail) => {
+    const js = el("script",{src:base + "leaflet.js", crossOrigin:"anonymous",
+      integrity:"sha384-cxOPjt7s7Iz04uaHJceBmS+qpjv2JkIHNVcuOrM+YHwZOmJGBXI00mdUXEq65HTH"});
+    js.onload = () => ok(window.L);
+    js.onerror = () => { leafletP = null; js.remove(); fail(new Error("leaflet")); };
+    document.head.append(js);
+  });
+  return leafletP;
+}
+
+/** 지도에서 회사 위치 고르기: 누르거나 핀을 끌어서 옮기고, 도보 반경과 그 안의 식당 수를 바로 보여준다. */
+function mapPicker(){
+  modal("지도에서 위치 고르기", (box, close, onClose) => {
+    box.classList.add("wide");
+    onClose(() => { $("#loc").value = S.locId; });
+    box.append(el("p",{className:"lead", textContent:"지도를 누르거나 핀을 끌어서 회사 위치를 찍어주세요."}));
+    const mapEl = el("div",{id:"pickMap"});
+    mapEl.setAttribute("role","application");
+    mapEl.setAttribute("aria-label","위치를 고르는 지도");
+    box.append(mapEl);
+    const info = el("div",{className:"map-info"});
+    info.setAttribute("aria-live","polite");
+    info.append(el("span",{textContent:"지도를 불러오는 중이에요…"}));
+    box.append(info);
+
+    const row = el("div",{className:"btn-row"});
+    const meBtn = el("button",{className:"btn ghost", type:"button", textContent:"📍 내 위치로"});
+    const ok = el("button",{className:"btn", type:"button", textContent:"이 위치로 정하기", disabled:true});
+    row.append(meBtn, ok);
+    box.append(row);
+
+    const start = origin();
+    let pos = {lat:start.lat, lng:start.lng}, addr = null, seq = 0, timer = null;
+
+    const countNear = p => SEED.reduce((n, r) =>
+      n + (Math.ceil(haversine(p.lat,p.lng,r.lat,r.lng)*DETOUR/WALK_MPM) <= S.walk ? 1 : 0), 0);
+
+    function showInfo(){
+      info.textContent = "";
+      info.append(el("b",{textContent: addr == null ? "주소를 확인하는 중이에요…"
+        : addr || (pos.lat.toFixed(5) + ", " + pos.lng.toFixed(5))}));
+      const n = countNear(pos);
+      info.append(el("span",{textContent: n
+        ? "여기서 도보 " + S.walk + "분 안에 식당 " + n + "곳"
+        : "여기서 도보 " + S.walk + "분 안엔 등록된 식당이 없어요"}));
+    }
+    function lookup(){
+      addr = null; showInfo();
+      const my = ++seq;
+      clearTimeout(timer);
+      timer = setTimeout(async () => {
+        const a = await geo.reverse(pos.lat, pos.lng);
+        if(my !== seq) return;
+        addr = a || ""; showInfo();
+      }, 600);
+    }
+
+    loadLeaflet().then(L => {
+      if(!mapEl.isConnected) return;
+      const map = L.map(mapEl, {zoomControl:true}).setView([pos.lat, pos.lng], 16);
+      L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        maxZoom:19, attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+      }).addTo(map);
+      const accent = getComputedStyle(document.documentElement).getPropertyValue("--accent").trim();
+      for(const r of SEED)
+        L.circleMarker([r.lat, r.lng], {radius:3, weight:0, fillColor:accent, fillOpacity:.55,
+          interactive:false}).addTo(map);
+      const radius = L.circle([pos.lat, pos.lng], {radius:S.walk*WALK_MPM/DETOUR, color:accent,
+        weight:1.5, fillColor:accent, fillOpacity:.07, interactive:false}).addTo(map);
+      const pin = L.marker([pos.lat, pos.lng], {draggable:true, autoPan:true, keyboard:true,
+        title:"회사 위치", icon:L.divIcon({className:"", html:'<div class="pin"></div>',
+        iconSize:[22,22], iconAnchor:[11,26]})}).addTo(map);
+
+      const moveTo = (ll, pan) => {
+        pos = {lat:ll.lat, lng:ll.lng};
+        pin.setLatLng(ll); radius.setLatLng(ll);
+        if(pan) map.setView(ll, Math.max(map.getZoom(), 16));
+        lookup();
+      };
+      map.on("click", e => moveTo(e.latlng));
+      pin.on("drag", e => radius.setLatLng(e.target.getLatLng()));
+      pin.on("dragend", e => moveTo(e.target.getLatLng()));
+      meBtn.onclick = () => {
+        if(!navigator.geolocation){ toast("이 브라우저는 현재 위치를 지원하지 않아요"); return; }
+        meBtn.disabled = true;
+        navigator.geolocation.getCurrentPosition(
+          p => { meBtn.disabled = false; moveTo(L.latLng(p.coords.latitude, p.coords.longitude), true); },
+          () => { meBtn.disabled = false; toast("위치를 가져오지 못했어요"); },
+          {timeout:8000});
+      };
+      ok.disabled = false;
+      const fit = () => map.fitBounds(radius.getBounds(), {padding:[12,12]});
+      fit();
+      setTimeout(() => { map.invalidateSize(); fit(); }, 400);   // 시트가 올라온 뒤 크기 다시 계산
+      lookup();
+    }).catch(() => {
+      info.textContent = "";
+      info.append(el("b",{textContent:"지도를 불러오지 못했어요"}),
+        el("span",{textContent:"인터넷 연결을 확인하고 다시 열어주세요."}));
+      meBtn.disabled = true;
+    });
+
+    ok.onclick = async () => {
+      clearTimeout(timer);
+      ok.disabled = true;
+      const a = addr != null ? addr : await geo.reverse(pos.lat, pos.lng);
+      S.mapPick = {lat:pos.lat, lng:pos.lng, addr:a || ""};
+      close();
+      ui.applyLoc("__map__");
+      toast("위치를 정했어요");
+    };
   });
 }
 
