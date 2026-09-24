@@ -13,13 +13,14 @@ OUT = "restaurants.json"
 RULES = [
     ("gukbap", ("순대", "국밥", "곰탕", "설렁탕", "해장", "감자탕")),
     ("donkatsu", ("돈가스", "돈까스")),
-    ("noodle", ("칼국수", "국수", "만두")),
+    ("chinese", ("중식", "마라탕", "양꼬치")),   # "중식>딤섬,중식만두" 가 면으로 가지 않도록 noodle 앞
+    ("noodle", ("칼국수", "국수", "만두", "냉면")),
     ("asian", ("베트남", "아시아", "태국")),
     ("salad", ("샐러드", "다이어트")),
-    ("bunsik", ("분식", "김밥", "떡볶이")),
-    ("chinese", ("중식",)),
+    ("bunsik", ("분식", "김밥", "떡볶이", "토스트")),
     ("japanese", ("일식", "초밥", "우동", "소바")),
-    ("western", ("양식", "이탈리아", "피자", "스페인", "스테이크", "파스타", "햄버거")),
+    ("western", ("양식", "이탈리아", "피자", "스페인", "스테이크", "파스타", "햄버거",
+                 "브런치", "샌드위치", "패밀리레스토랑")),
     ("korean", ("한식",)),
 ]
 DROP = ("술집", "이자카야", "요리주점", "카페", "베이커리")
@@ -53,11 +54,12 @@ with open(SRC, encoding="utf-8") as fh:
         if any(d in cat for d in DROP):
             dropped += 1
             continue
-        key = (name, addr)
-        if key in seen:
+        # 같은 가게가 다른 검색어로 두 번 잡히면 주소 표기만 조금 다를 수 있어서 좌표로도 거른다
+        key, pos = (name, addr), (name, mapx, mapy)
+        if key in seen or pos in seen:
             dropped += 1
             continue
-        seen.add(key)
+        seen.update((key, pos))
         app_cat = classify(cat)
         lat, lng = round(int(mapy) / 1e7, 6), round(int(mapx) / 1e7, 6)
         price, _ = price_model.estimate(name, cat, lat, lng, FALLBACK[app_cat])
