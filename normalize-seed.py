@@ -99,6 +99,9 @@ for src in (SRC, POP):
         }
         if pos in popular or bld in popular:
             row["pop"] = 1
+        # 버거집은 양식으로 묶이지만 '분위기' 있는 곳이 아니다. 앱에서 태그를 따로 준다
+        if "햄버거" in cat:
+            row["bg"] = 1
         rows.append(row)
 
 ids = {r["i"] for r in rows}
