@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """Naver local-search rows -> lunch-picker seed JSON."""
-import json, hashlib, importlib.util
+import json, hashlib, importlib.util, re
 
 _spec = importlib.util.spec_from_file_location("price_model", "price-model.py")
 price_model = importlib.util.module_from_spec(_spec)
@@ -40,6 +40,17 @@ FALLBACK = {
 }
 
 
+def building_addr(addr):
+    """도로명 + 건물번호까지만 남긴다. 층·호수는 지도 검색을 헷갈리게 하고 틀리기 쉽다.
+    "서울특별시 강동구 고덕로 210 지층 5,6호" -> "서울특별시 강동구 고덕로 210"
+    """
+    toks = addr.split()
+    for i in range(1, len(toks)):
+        if re.fullmatch(r"\d+(-\d+)?", toks[i]) and re.search(r"(로|길)$", toks[i - 1]):
+            return " ".join(toks[:i + 1])
+    return addr
+
+
 def short_id(name, addr):
     return hashlib.sha1((name + "|" + addr).encode("utf-8")).hexdigest()[:8]
 
@@ -64,10 +75,10 @@ with open(SRC, encoding="utf-8") as fh:
         lat, lng = round(int(mapy) / 1e7, 6), round(int(mapx) / 1e7, 6)
         price, _ = price_model.estimate(name, cat, lat, lng, FALLBACK[app_cat])
         rows.append({
-            "i": short_id(name, addr),
+            "i": short_id(name, addr),          # id 는 원본 주소 기준 (저장된 평점·기록 유지)
             "n": name,
             "c": app_cat,
-            "a": addr,
+            "a": building_addr(addr),
             "lat": lat,
             "lng": lng,
             "p": price,
