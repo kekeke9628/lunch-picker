@@ -185,7 +185,7 @@ input[type=range]{width:100%;height:28px;margin:0;accent-color:var(--accent);cur
 .pick .nm{font-weight:700;font-size:16px;letter-spacing:-.02em;overflow-wrap:anywhere;line-height:1.35}
 .pick .meta{color:var(--muted);font-size:13px;margin-top:3px;font-variant-numeric:tabular-nums}
 .pick .meta .seen{color:var(--accent-ink);font-weight:600}
-.pick .acts{display:flex;flex-direction:column;gap:6px;align-items:stretch}
+.pick .acts{display:flex;gap:6px;align-items:stretch}
 .pick .acts .btn{min-height:34px;padding:0 12px;font-size:13px;border-radius:10px}
 .pick.lit{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft);transform:scale(1.015)}
 .pick.won{border-color:var(--good);box-shadow:0 0 0 3px var(--good-soft)}
@@ -265,10 +265,52 @@ input[type=range]{width:100%;height:28px;margin:0;accent-color:var(--accent);cur
 .duel .meta{color:var(--muted);font-size:13px;margin-top:2px}
 
 .winner{text-align:center;padding:6px 0 4px}
-.winner .em{font-size:56px;line-height:1.1}
+.winner .em{width:88px;height:88px;margin:4px auto 0;border-radius:26px;background:var(--accent-soft);
+  display:grid;place-items:center;font-size:52px;line-height:1}
 .winner .nm{font-size:24px;font-weight:800;margin-top:8px;letter-spacing:-.035em;line-height:1.25}
 .winner .meta{color:var(--muted);font-size:14px;margin-top:6px}
 .winner .addr{color:var(--muted);font-size:12.5px;margin-top:2px}
+.facts{display:flex;justify-content:center;flex-wrap:wrap;gap:6px;margin-top:10px}
+.facts span{padding:5px 10px;border-radius:999px;background:var(--surface-2);font-size:13px;font-weight:600;
+  font-variant-numeric:tabular-nums}
+.facts span.seen{background:var(--accent-soft);color:var(--accent-ink)}
+
+/* 오늘 결정한 곳 */
+#today{scroll-margin-top:120px}
+.today{border:1.5px solid var(--accent);background:var(--surface);border-radius:var(--r-card);
+  margin:12px 0;overflow:hidden;box-shadow:var(--shadow)}
+.today .top{display:flex;align-items:center;justify-content:space-between;gap:8px;
+  padding:10px 16px;background:var(--accent-soft);color:var(--accent-ink);font-size:13px;font-weight:700}
+.today .top .done{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:999px;
+  background:var(--good-soft);color:var(--good);font-size:12px}
+.today .main{display:grid;grid-template-columns:72px 1fr;gap:14px;align-items:center;padding:16px 16px 4px}
+.today .em{width:72px;height:72px;border-radius:22px;background:var(--surface-2);display:grid;place-items:center;
+  font-size:40px;line-height:1}
+.today .nm{font-size:21px;font-weight:800;letter-spacing:-.035em;line-height:1.25;overflow-wrap:anywhere}
+.today .addr{color:var(--muted);font-size:12.5px;margin-top:3px}
+.today .facts{justify-content:flex-start;margin:10px 16px 0}
+.today .acts{display:grid;grid-template-columns:1.3fr 1fr 1fr;gap:8px;padding:14px 16px 0}
+.today .acts .btn{padding:0 10px}
+.memo{margin:12px 16px 0;display:flex;align-items:center;gap:8px}
+.memo input{height:40px;font-size:14px}
+.memo label{font-size:13.5px;font-weight:600;color:var(--muted);white-space:nowrap}
+.btn-row.three .btn{padding:0 8px}
+.pick .meta .memo-tag{color:var(--text)}
+.today .rate{margin:14px 16px 0;padding:12px 0 0;border-top:1px solid var(--line);
+  display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.today .rate .q{font-size:13.5px;font-weight:600;color:var(--muted)}
+.stars{display:flex;gap:2px}
+.stars button{width:36px;height:36px;border-radius:10px;font-size:22px;line-height:1;color:var(--line-strong);
+  transition:transform .15s var(--ease),color .15s}
+.stars button:hover{transform:scale(1.12)}
+.stars button.on{color:#f5a524}
+.today .foot{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;
+  padding:12px 16px 14px;font-size:12.5px;color:var(--muted)}
+.today .foot button{color:var(--muted);text-decoration:underline;font-size:12.5px}
+.today .foot button:hover{color:var(--text)}
+.pick.chosen{border-color:var(--good);box-shadow:0 0 0 3px var(--good-soft)}
+
+.burst{position:fixed;z-index:70;pointer-events:none;font-size:24px;line-height:1;left:0;top:0;will-change:transform,opacity}
 
 /* ---------- lists ---------- */
 .item{display:flex;gap:12px;align-items:center;padding:10px 0}
@@ -311,10 +353,14 @@ input[type=range]{width:100%;height:28px;margin:0;accent-color:var(--accent);cur
   .sheet{animation:up .38s var(--ease) both}
   .toast{animation:toast .3s var(--ease) both}
   .view{animation:fade .25s ease-out both}
+  .winner .em{animation:pop .55s cubic-bezier(.34,1.56,.64,1) both .08s}
+  .today.fresh{animation:rise .5s var(--ease) both}
+  .today.fresh .em{animation:pop .6s cubic-bezier(.34,1.56,.64,1) both .15s}
 }
 @keyframes rise{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
 @keyframes up{from{transform:translateY(40px);opacity:0}to{transform:none;opacity:1}}
 @keyframes fade{from{opacity:0}to{opacity:1}}
+@keyframes pop{from{transform:scale(.4) rotate(-12deg);opacity:0}to{transform:none;opacity:1}}
 @keyframes toast{from{opacity:0;transform:translate(-50%,10px)}to{opacity:1;transform:translate(-50%,0)}}
 </style>
 </head>
@@ -339,6 +385,7 @@ input[type=range]{width:100%;height:28px;margin:0;accent-color:var(--accent);cur
 
   <!-- ============ 추천받기 ============ -->
   <section id="view-pick" class="view" role="tabpanel" aria-labelledby="tab-pick">
+    <div id="today" aria-live="polite"></div>
     <div class="card">
       <h2>어디서 먹나요</h2>
       <div class="grid-2">
@@ -612,7 +659,7 @@ function pool(){
   const o = origin(), out = [];
   for(const r of SEED){
     const m = Math.max(1, Math.ceil(haversine(o.lat,o.lng,r.lat,r.lng)*DETOUR/WALK_MPM));
-    out.push({id:r.i, name:r.n, cat:r.c, addr:r.a, walk:m, price:r.p});
+    out.push({id:r.i, name:r.n, cat:r.c, addr:r.a, walk:m, price:r.p, lat:r.lat, lng:r.lng});
   }
   for(const r of S.mine){
     if(r.loc !== S.locId) continue;
@@ -628,6 +675,7 @@ function decorate(r){
     price: ov.price != null ? ov.price : (r.price != null ? r.price : meta.price),
     rating: ov.rating || 0,
     hidden: !!ov.hidden,
+    memo: ov.memo || "",
     tags: meta.tags,
     em: meta.em,
     catLabel: meta.label,
@@ -706,6 +754,33 @@ const won = n => n.toLocaleString("ko-KR") + "원";
 const mapUrl = r => "https://map.naver.com/p/search/" +
   encodeURIComponent(r.name + " " + (r.addr === "직접 추가" ? "" : r.addr));
 const metaLine = r => r.catLabel + " · 도보 " + r.walk + "분 · " + won(r.price);
+/* 카카오맵 공식 URL 스킴: 좌표가 있으면 길찾기, 없으면 네이버 지도 검색 */
+const routeUrl = r => r.lat != null
+  ? "https://map.kakao.com/link/to/" + encodeURIComponent(r.name.replace(/,/g," ")) + "," + r.lat + "," + r.lng
+  : mapUrl(r);
+/* 메뉴 정보는 데이터에 없어서 네이버 검색의 가게 메뉴 영역으로 보낸다 */
+const menuUrl = r => "https://search.naver.com/search.naver?query=" + encodeURIComponent(r.name + " 메뉴");
+const todayPick = () => (S.history[0] && S.history[0].date === today()) ? S.history[0] : null;
+const dayLabel = () => { const d = new Date();
+  return (d.getMonth()+1) + "월 " + d.getDate() + "일 " + "일월화수목금토"[d.getDay()] + "요일"; };
+
+/** 결정 순간의 작은 축하: 음식 이모지가 튀어 오른다. 동작 줄이기 설정이면 생략. */
+function burst(em){
+  if(reduceMotion() || !document.body.animate) return;
+  const cx = innerWidth / 2, cy = innerHeight * 0.42;
+  for(let i = 0; i < 22; i++){
+    const b = el("span",{className:"burst", textContent: i % 4 === 0 ? "✨" : em});
+    b.setAttribute("aria-hidden","true");
+    document.body.append(b);
+    const a = Math.random() * Math.PI * 2, v = 90 + Math.random() * 170;
+    const dx = Math.cos(a) * v, dy = Math.sin(a) * v - 60, rot = (Math.random() - .5) * 540;
+    b.animate([
+      {transform:`translate(${cx}px,${cy}px) scale(.3)`, opacity:1},
+      {transform:`translate(${cx+dx}px,${cy+dy}px) rotate(${rot/2}deg) scale(1)`, opacity:1, offset:.45},
+      {transform:`translate(${cx+dx*1.25}px,${cy+dy+160}px) rotate(${rot}deg) scale(.8)`, opacity:0},
+    ], {duration: 1000 + Math.random() * 500, easing:"cubic-bezier(.2,.7,.3,1)"}).onfinish = () => b.remove();
+  }
+}
 
 let lastPicks = [], rerolled = new Set(), busy = false, stale = false, listShown = LIST_PAGE;
 const TABS = ["pick","list","log"];
@@ -720,6 +795,7 @@ const ui = {
       if(on && focus) tab.focus();
     }
     $("#dock").hidden = name !== "pick";
+    if(name === "pick") render.today();
     if(name === "list"){ listShown = LIST_PAGE; render.list(); }
     if(name === "log")  render.log();
     window.scrollTo({top:0});
@@ -825,6 +901,7 @@ const render = {
 
     ui.applyTheme(ui.theme());
     render.controls();
+    render.today();
     render.results([]);
   },
 
@@ -907,6 +984,97 @@ const render = {
     render.markStale();
   },
 
+  /* 오늘 결정한 곳: 추천받기 탭 맨 위에 남겨 둔다 */
+  today(fresh){
+    const box = $("#today"); box.textContent = "";
+    const h = todayPick();
+    if(!h) return;
+    const meta = CATS[h.cat] || CATS.korean;
+    const r = pool().find(x => x.id === h.id) ||
+      {id:h.id, name:h.name, cat:h.cat, catLabel:meta.label, em:meta.em, addr:"", rating:0};
+
+    const c = el("article",{className:"today" + (fresh ? " fresh" : "")});
+    const top = el("div",{className:"top"});
+    top.append(el("span",{textContent:"오늘의 점심 · " + dayLabel()}));
+    top.append(el("span",{className:"done", textContent:"✓ 결정 완료"}));
+    c.append(top);
+
+    const main = el("div",{className:"main"});
+    main.append(el("div",{className:"em", textContent:r.em, ariaHidden:"true"}));
+    const t = el("div");
+    t.append(el("div",{className:"nm", textContent:r.name}));
+    if(r.addr && r.addr !== "직접 추가") t.append(el("div",{className:"addr", textContent:r.addr}));
+    main.append(t);
+    c.append(main);
+
+    const facts = el("div",{className:"facts"});
+    facts.append(el("span",{textContent:r.catLabel}));
+    if(r.walk != null) facts.append(el("span",{textContent:"🚶 " + r.walk + "분"}));
+    if(r.price) facts.append(el("span",{textContent:"💳 " + won(r.price) + " 안팎"}));
+    c.append(facts);
+
+    const acts = el("div",{className:"acts"});
+    const go = el("a",{className:"btn", href:routeUrl(r), target:"_blank", rel:"noopener",
+      textContent: r.lat != null ? "길찾기" : "지도 보기"});
+    go.setAttribute("aria-label", r.name + " " + go.textContent + " (새 창)");
+    const mn = el("a",{className:"btn ghost", href:menuUrl(r), target:"_blank", rel:"noopener",
+      textContent:"메뉴 보기"});
+    mn.setAttribute("aria-label", r.name + " 메뉴 보기 (새 창)");
+    const share = el("button",{className:"btn ghost", type:"button", textContent:"공유"});
+    share.onclick = () => app.share(r);
+    acts.append(go, mn, share);
+    c.append(acts);
+
+    const memo = el("div",{className:"memo"});
+    const ml = el("label",{htmlFor:"todayMemo", textContent:"📝 먹은 메뉴"});
+    const mi = el("input",{type:"text", id:"todayMemo", value:r.memo || "", maxLength:40,
+      placeholder:"예: 제육볶음, 다음엔 김치찌개", autocomplete:"off"});
+    mi.onchange = () => {
+      S.overrides[r.id] = Object.assign({}, S.overrides[r.id], {memo: mi.value.trim()});
+      save(); render.results(lastPicks, lastPicks.total, true);
+      toast(mi.value.trim() ? "메모했어요. 추천 카드에도 보여드릴게요" : "메모를 지웠어요");
+    };
+    mi.onkeydown = e => { if(e.key === "Enter") mi.blur(); };
+    memo.append(ml, mi);
+    c.append(memo);
+
+    const rate = el("div",{className:"rate"});
+    rate.append(el("span",{className:"q", textContent: r.rating ? "내 평점" : "다녀와서 어땠어요?"}));
+    const stars = el("div",{className:"stars"});
+    stars.setAttribute("role","group"); stars.setAttribute("aria-label","평점 주기");
+    for(let n = 1; n <= 5; n++){
+      const b = el("button",{type:"button", textContent:"★", className: n <= r.rating ? "on" : ""});
+      b.setAttribute("aria-label", n + "점");
+      b.setAttribute("aria-pressed", String(n === r.rating));
+      b.onclick = () => {
+        const next = r.rating === n ? 0 : n;
+        S.overrides[r.id] = Object.assign({}, S.overrides[r.id], {rating:next});
+        save(); render.today(); render.results(lastPicks, lastPicks.total, true);
+        toast(next ? "평점 " + next + "점, 다음 추천에 반영할게요" : "평점을 지웠어요");
+      };
+      stars.append(b);
+    }
+    rate.append(stars);
+    c.append(rate);
+
+    const mon = today().slice(0,7);
+    const month = S.history.filter(x => x.date.startsWith(mon));
+    const sameCat = month.filter(x => x.cat === h.cat).length;
+    const foot = el("div",{className:"foot"});
+    foot.append(el("span",{textContent:"이번 달 " + month.length + "번째 점심 · " + meta.label + " " + sameCat + "번째"}));
+    const undo = el("button",{type:"button", textContent:"결정 취소"});
+    undo.onclick = () => {
+      const before = S.history.slice();
+      S.history = S.history.slice(1);
+      save(); render.today(); render.results(lastPicks, lastPicks.total, true);
+      toast("결정을 취소했어요", {label:"되돌리기", run(){
+        S.history = before; save(); render.today(); render.results(lastPicks, lastPicks.total, true); }});
+    };
+    foot.append(undo);
+    c.append(foot);
+    box.append(c);
+  },
+
   /* 위치 선택 아래 줄: 현재 위치·지도 위치면 주소, 역이면 지도 고르기 버튼 */
   locAddr(){
     const box = $("#locAddr"); box.textContent = "";
@@ -960,8 +1128,10 @@ const render = {
     if(head) head.after(bar);
   },
 
-  results(picks, total){
+  /* quiet: 이미 보이는 카드를 갱신만 할 때(평점·메모·결정) 등장 애니메이션 없이 */
+  results(picks, total, quiet){
     const box = $("#results"); box.textContent = "";
+    picks = picks.map(decorate);   // 평점·메모 등 바뀐 값 반영
     stale = false;
     if(!picks.length){
       box.append(el("div",{className:"empty", innerHTML:
@@ -978,7 +1148,7 @@ const render = {
 
     picks.forEach((r,i) => {
       const c = render.pickCard(r);
-      c.classList.add("enter"); c.style.setProperty("--i", i);
+      if(!quiet){ c.classList.add("enter"); c.style.setProperty("--i", i); }
       box.append(c);
     });
 
@@ -1010,17 +1180,23 @@ const render = {
         textContent: d === 0 ? "오늘 먹음" : d + "일 전에 감"}));
     }
     if(r.rating) meta.append(" · ★" + r.rating);
+    if(r.memo) meta.append(" · ", el("span",{className:"memo-tag", textContent:"📝 " + r.memo}));
     b.append(meta);
     c.append(b);
 
     const acts = el("div",{className:"acts"});
-    const go = el("button",{className:"btn soft", textContent:"여기로", type:"button"});
-    go.setAttribute("aria-label", r.name + "로 결정");
-    go.onclick = () => announce(r);
+    const chosen = todayPick() && todayPick().id === r.id;
+    if(chosen) c.classList.add("chosen");
+    const go = el("button",{className:"btn soft", textContent: chosen ? "결정함 ✓" : "여기로", type:"button"});
+    go.setAttribute("aria-label", chosen ? r.name + " 오늘 결정함" : r.name + "로 결정");
+    go.onclick = () => chosen ? $("#today").scrollIntoView({behavior: reduceMotion() ? "auto" : "smooth", block:"start"}) : announce(r);
+    const mn = el("a",{className:"btn ghost", href:menuUrl(r), target:"_blank",
+                       rel:"noopener", textContent:"메뉴"});
+    mn.setAttribute("aria-label", r.name + " 메뉴 보기 (새 창)");
     const a = el("a",{className:"btn ghost", href:mapUrl(r), target:"_blank",
                       rel:"noopener", textContent:"지도"});
     a.setAttribute("aria-label", r.name + " 네이버 지도에서 보기 (새 창)");
-    acts.append(go, a);
+    acts.append(go, mn, a);
     c.append(acts);
     return c;
   },
@@ -1044,7 +1220,8 @@ const render = {
       const b = el("div",{className:"body"});
       b.append(el("div",{className:"nm", textContent:r.name}));
       b.append(el("div",{className:"meta",
-        textContent:metaLine(r) + (r.rating ? " · ★" + r.rating : "") + (r.hidden ? " · 추천 제외" : "")}));
+        textContent:metaLine(r) + (r.rating ? " · ★" + r.rating : "") + (r.memo ? " · 📝 " + r.memo : "") +
+                    (r.hidden ? " · 추천 제외" : "")}));
       it.append(b);
       const edit = el("button",{className:"mini", textContent:"수정", type:"button"});
       edit.setAttribute("aria-label", r.name + " 수정");
@@ -1239,9 +1416,17 @@ function announce(r, onDone){
     const w = el("div",{className:"winner"});
     w.append(el("div",{className:"em", textContent:r.em, ariaHidden:"true"}));
     w.append(el("div",{className:"nm", textContent:r.name}));
-    w.append(el("div",{className:"meta", textContent:metaLine(r) + " 안팎"}));
+    const facts = el("div",{className:"facts"});
+    facts.append(el("span",{textContent:r.catLabel}));
+    facts.append(el("span",{textContent:"🚶 " + r.walk + "분"}));
+    facts.append(el("span",{textContent:"💳 " + won(r.price) + " 안팎"}));
+    const d = daysSince(r.id);
+    if(d !== null && d <= 14) facts.append(el("span",{className:"seen", textContent: d === 0 ? "오늘 먹음" : d + "일 전에 감"}));
+    if(r.rating) facts.append(el("span",{textContent:"★ " + r.rating}));
+    if(r.memo) facts.append(el("span",{textContent:"📝 " + r.memo}));
+    w.append(facts);
     if(r.addr !== "직접 추가")
-      w.append(el("div",{className:"addr", textContent:r.addr}));
+      w.append(el("div",{className:"addr", style:"margin-top:8px", textContent:r.addr}));
     box.append(w);
 
     const acts = el("div",{className:"stack", style:"margin-top:20px"});
@@ -1253,16 +1438,21 @@ function announce(r, onDone){
       S.history.unshift({id:r.id, name:r.name, cat:r.cat, date:today()});
       S.history = S.history.slice(0, 200);
       save(); close();
-      render.results(lastPicks, lastPicks.total);
-      toast(r.name + " 기록했어요",
-        {label:"취소", run(){ S.history = before; save(); render.results(lastPicks, lastPicks.total); }});
+      burst(r.em);
+      render.today(true);
+      render.results(lastPicks, lastPicks.total, true);
+      $("#today").scrollIntoView({behavior: reduceMotion() ? "auto" : "smooth", block:"start"});
+      toast("맛있게 드세요!",
+        {label:"취소", run(){ S.history = before; save(); render.today(); render.results(lastPicks, lastPicks.total, true); }});
     };
-    const row = el("div",{className:"btn-row"});
+    const row = el("div",{className:"btn-row three"});
+    const mn = el("a",{className:"btn ghost", href:menuUrl(r), target:"_blank", rel:"noopener",
+                       textContent:"메뉴 보기"});
     const map = el("a",{className:"btn ghost", href:mapUrl(r), target:"_blank", rel:"noopener",
-                        textContent:"지도 보기"});
-    const share = el("button",{className:"btn ghost", type:"button", textContent:"같이 먹을 사람에게 공유"});
+                        textContent:"지도"});
+    const share = el("button",{className:"btn ghost", type:"button", textContent:"공유"});
     share.onclick = () => app.share(r);
-    row.append(map, share);
+    row.append(mn, map, share);
     const again = el("button",{className:"btn ghost", type:"button", textContent:"다시 굴리기"});
     again.onclick = () => { close(); app.recommend(true); };
     acts.append(ok, row, again);
@@ -1278,6 +1468,13 @@ function editRestaurant(r){
     const pl = el("label",{className:"lbl", htmlFor:"edPrice", textContent:"1인 가격 (원)"});
     const price = el("input",{type:"number", id:"edPrice", value:r.price, min:1000, step:500, inputMode:"numeric"});
     box.append(pl, price);
+
+    const ml = el("label",{className:"lbl", htmlFor:"edMemo", style:"margin-top:18px"});
+    ml.append("메뉴 메모 ", el("a",{className:"link", href:menuUrl(r), target:"_blank", rel:"noopener",
+      textContent:"메뉴 보기 ↗"}));
+    const memo = el("input",{type:"text", id:"edMemo", value:r.memo || "", maxLength:40,
+      placeholder:"예: 제육볶음 맛집", autocomplete:"off"});
+    box.append(ml, memo);
 
     const sl = el("div",{className:"lbl", id:"edStarL", style:"margin-top:18px", textContent:"내 평점"});
     box.append(sl);
@@ -1313,7 +1510,8 @@ function editRestaurant(r){
     const acts = el("div",{className:"stack", style:"margin-top:22px"});
     const ok = el("button",{className:"btn", type:"button", textContent:"저장"});
     ok.onclick = () => {
-      S.overrides[r.id] = {price:+price.value || r.price, rating:picked, hidden:hidden};
+      S.overrides[r.id] = Object.assign({}, S.overrides[r.id],
+        {price:+price.value || r.price, rating:picked, hidden:hidden, memo:memo.value.trim()});
       save(); close(); render.list(); render.pool();
       toast("저장했어요");
     };
@@ -1569,7 +1767,7 @@ const app = {
         const data = JSON.parse(fr.result);
         if(!data || !data.state) throw new Error("형식이 달라요");
         S = Object.assign({}, DEFAULTS, data.state);
-        save(); lastPicks = []; render.controls(); render.list(); render.log(); render.results([]);
+        save(); lastPicks = []; render.controls(); render.today(); render.list(); render.log(); render.results([]);
         toast("불러왔어요");
       }catch(e){
         $("#backupMsg").textContent = "이 파일은 읽을 수 없어요: " + e.message;
